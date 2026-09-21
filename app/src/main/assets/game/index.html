@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fruit Fusion — Match 3</title>
+<meta name="description" content="A match-3 puzzle game with striped fruits, fusion gems, boss battles, and 100 levels.">
+
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c5cfc">
+<meta name="background-color" content="#eef1f7">
+
+<!-- Icons -->
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/favicon-32.png">
+
+<!-- iOS PWA behavior (Android reads display:standalone from the manifest) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fruit Fusion">
+<meta name="mobile-web-app-capable" content="yes">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap');
+:root{
+  --bg:#eef1f7;--shadow-light:#ffffff;--shadow-dark:#b6c0d1;
+  --primary:#7c5cfc;--primary-dark:#5f3fe0;
+  --success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--gold:#eab308;
+  --text:#333a4d;--text-light:#8b93a7;
+  --font-display:'Baloo 2',sans-serif;--font-body:'Nunito',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:var(--font-body);background:var(--bg);min-height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden;color:var(--text);}
+h1,h2,.game-title,.menu-title,.info-value,.stat-value,.level-number,.modal-title,.level-btn,.boss-name,.level-type{font-family:var(--font-display);}
+.neu-flat{background:var(--bg);box-shadow:9px 9px 16px var(--shadow-dark),-9px -9px 16px var(--shadow-light);border-radius:20px;}
+.neu-pressed{background:var(--bg);box-shadow:inset 6px 6px 10px var(--shadow-dark),inset -6px -6px 10px var(--shadow-light);border-radius:20px;}
+.neu-btn{background:var(--bg);box-shadow:6px 6px 12px var(--shadow-dark),-6px -6px 12px var(--shadow-light);border:none;border-radius:15px;cursor:pointer;transition:all 0.2s ease;font-family:var(--font-body);font-weight:700;color:var(--text);}
+.neu-btn:hover{transform:translateY(-2px);}
+.neu-btn:active{box-shadow:inset 4px 4px 8px var(--shadow-dark),inset -4px -4px 8px var(--shadow-light);transform:translateY(0);}
+.neu-btn.primary{color:var(--primary);}
+.neu-btn.success{color:var(--success);}
+.neu-btn.danger{color:var(--danger);}
+#game-container{width:100%;max-width:500px;height:100vh;max-height:900px;position:relative;overflow:hidden;}
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;padding:20px 20px 68px 20px;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.screen.hidden{transform:translateX(100%);pointer-events:none;}
+.screen.left{transform:translateX(-100%);}
+#splash-screen{justify-content:center;align-items:center;z-index:100;}
+.logo-container{width:170px;height:170px;border-radius:50%;display:flex;justify-content:center;align-items:center;margin-bottom:26px;animation:float 3s ease infinite;position:relative;}
+.logo-text{font-size:76px;}
+.logo-spark{position:absolute;font-size:26px;top:8px;right:6px;animation:sparkle 1.6s ease-in-out infinite;}
+@keyframes sparkle{0%,100%{opacity:0.3;transform:scale(0.8) rotate(0deg);}50%{opacity:1;transform:scale(1.15) rotate(20deg);}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+.game-title{font-size:34px;font-weight:800;color:var(--text);margin-bottom:8px;text-align:center;letter-spacing:-0.5px;}
+.game-title span{color:var(--primary);}
+.game-subtitle{font-size:15px;color:var(--text-light);margin-bottom:36px;font-weight:700;}
+#menu-screen{z-index:90;}
+.menu-header{text-align:center;margin-bottom:26px;padding-top:16px;}
+.menu-title{font-size:26px;font-weight:800;color:var(--text);}
+.menu-title span{color:var(--primary);}
+.menu-stats{display:flex;justify-content:space-around;margin:18px 0;padding:16px;}
+.stat-item{text-align:center;}
+.stat-value{font-size:22px;font-weight:700;color:var(--primary);}
+.stat-label{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:2px;}
+.menu-buttons{display:flex;flex-direction:column;gap:14px;margin-top:18px;}
+.menu-btn{padding:17px 30px;font-size:17px;display:flex;align-items:center;justify-content:center;gap:10px;}
+.menu-btn .icon{font-size:22px;}
+.menu-row{display:flex;gap:12px;}
+.menu-btn-sm{flex:1;padding:14px 8px;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.menu-btn-sm .icon{font-size:20px;}
+#level-screen{z-index:80;}
+.level-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-top:8px;}
+.level-header h2{font-size:19px;font-weight:800;}
+.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;padding:8px;padding-bottom:20px;}
+.level-btn{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;font-weight:700;position:relative;}
+.level-btn.locked{opacity:0.4;pointer-events:none;}
+.level-btn.completed{color:var(--success);}
+.level-btn.current{color:var(--primary);box-shadow:0 0 0 3px var(--primary),6px 6px 12px var(--shadow-dark),-6px -6px 12px var(--shadow-light);animation:pulse 2s infinite;}
+.level-btn.boss-level{color:var(--danger);}
+.level-stars{font-size:9px;position:absolute;bottom:5px;letter-spacing:1px;}
+#game-screen{z-index:70;padding:10px;}
+.game-header{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;margin-bottom:10px;}
+.game-info{display:flex;gap:12px;}
+.info-box{padding:8px 15px;text-align:center;transition:box-shadow 0.2s ease;}
+.info-value{font-size:19px;font-weight:700;color:var(--primary);}
+.info-box.low-moves .info-value{color:var(--danger);animation:pulse 0.8s infinite;}
+.info-label{font-size:9px;color:var(--text-light);text-transform:uppercase;font-weight:700;letter-spacing:0.5px;}
+.level-info{text-align:center;}
+.level-number{font-size:17px;font-weight:800;}
+.level-type{font-size:10px;color:var(--text-light);font-weight:700;}
+.pause-btn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;}
+.board-container{flex:1;display:flex;justify-content:center;align-items:center;padding:8px;}
+#game-board{display:grid;gap:clamp(3px,1.2vw,6px);padding:12px;position:relative;touch-action:none;width:100%;max-width:460px;margin:0 auto;}
+.cell{width:var(--cell-size,52px);height:var(--cell-size,52px);border-radius:calc(var(--cell-size,52px)*0.27);display:flex;justify-content:center;align-items:center;font-size:calc(var(--cell-size,52px)*0.5);cursor:pointer;transition:transform 0.15s ease,background 0.3s ease,box-shadow 0.2s ease;position:relative;user-select:none;touch-action:none;}
+.cell.selected{box-shadow:0 0 0 3px var(--primary),inset 3px 3px 6px var(--shadow-dark),inset -3px -3px 6px var(--shadow-light);transform:scale(1.12);z-index:10;}
+.cell.matched{animation:matchPop 0.4s ease forwards;}
+.cell.falling{animation:fallIn 0.5s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes matchPop{0%{transform:scale(1);opacity:1;}40%{transform:scale(1.4);opacity:0.8;}100%{transform:scale(0);opacity:0;}}
+@keyframes fallIn{0%{transform:translateY(-200px) scale(0.5);opacity:0;}60%{transform:translateY(10px) scale(1.05);opacity:1;}100%{transform:translateY(0) scale(1);opacity:1;}}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px) rotate(-3deg);}40%{transform:translateX(6px) rotate(3deg);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.cell.shake{animation:shake 0.4s ease;}
+.cell.hint{animation:hintPulse 1.5s ease infinite;}
+@keyframes hintPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(124,92,252,0.4);}50%{transform:scale(1.05);box-shadow:0 0 0 8px rgba(124,92,252,0);}}
+.cell.special-h{box-shadow:0 0 0 2px #fff,0 0 12px rgba(255,255,255,0.85);background-image:repeating-linear-gradient(90deg,rgba(255,255,255,0.4) 0 4px,transparent 4px 10px);}
+.cell.special-v{box-shadow:0 0 0 2px #fff,0 0 12px rgba(255,255,255,0.85);background-image:repeating-linear-gradient(0deg,rgba(255,255,255,0.4) 0 4px,transparent 4px 10px);}
+.cell.special-bomb{box-shadow:0 0 0 3px var(--gold),0 0 16px rgba(234,179,8,0.65);animation:bombPulse 1.2s ease-in-out infinite;}
+@keyframes bombPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+.progress-container{padding:15px;margin:10px 0;}
+.progress-bar{height:12px;border-radius:10px;overflow:hidden;position:relative;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#a78bfa);border-radius:10px;transition:width 0.5s ease;position:relative;}
+.progress-fill::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);animation:shimmer 2s infinite;}
+@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+.progress-text{text-align:center;font-size:12px;color:var(--text-light);margin-top:8px;font-weight:700;}
+.boss-bar{margin:10px 15px;padding:12px;}
+.boss-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.boss-name{font-weight:700;color:var(--danger);font-size:14px;}
+.boss-hp-text{font-size:12px;color:var(--text-light);font-weight:700;}
+.boss-health-bar{height:12px;border-radius:8px;overflow:hidden;}
+.boss-health-fill{height:100%;background:linear-gradient(90deg,var(--danger),#fca5a5);border-radius:8px;transition:width 0.5s ease;position:relative;}
+.boss-health-fill::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);animation:shimmer 2s infinite;}
+.particle{position:absolute;pointer-events:none;font-size:20px;animation:particleFloat 1.2s ease-out forwards;z-index:100;}
+@keyframes particleFloat{0%{transform:translateY(0) scale(1) rotate(0deg);opacity:1;}100%{transform:translateY(-120px) scale(0.3) rotate(360deg);opacity:0;}}
+.combo-text{position:absolute;font-size:26px;font-weight:800;color:var(--warning);pointer-events:none;animation:comboAnim 1.2s ease-out forwards;z-index:100;text-shadow:2px 2px 8px rgba(0,0,0,0.15);white-space:nowrap;font-family:var(--font-display);}
+@keyframes comboAnim{0%{transform:translateX(-50%) scale(0.3) translateY(0);opacity:0;}30%{transform:translateX(-50%) scale(1.25) translateY(-30px);opacity:1;}100%{transform:translateX(-50%) scale(1) translateY(-80px);opacity:0;}}
+.damage-text{position:absolute;font-size:30px;font-weight:800;color:var(--danger);pointer-events:none;animation:damageAnim 1s ease-out forwards;z-index:100;text-shadow:2px 2px 8px rgba(0,0,0,0.2);font-family:var(--font-display);}
+@keyframes damageAnim{0%{transform:scale(0.5) translateY(0);opacity:0;}30%{transform:scale(1.4) translateY(-20px);opacity:1;}100%{transform:scale(1) translateY(-60px);opacity:0;}}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(238,241,247,0.92);display:flex;justify-content:center;align-items:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity 0.3s ease;}
+.modal-overlay.active{opacity:1;pointer-events:all;}
+.modal-content{padding:34px;text-align:center;max-width:340px;width:90%;transform:scale(0.8);transition:transform 0.3s ease;}
+.modal-overlay.active .modal-content{transform:scale(1);}
+.modal-icon-wrap{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.modal-icon{font-size:48px;animation:modalBounce 0.6s ease;}
+@keyframes modalBounce{0%{transform:scale(0);}50%{transform:scale(1.3);}100%{transform:scale(1);}}
+.modal-title{font-size:24px;font-weight:800;margin-bottom:10px;}
+.modal-text{color:var(--text-light);margin-bottom:18px;font-size:15px;line-height:1.6;font-weight:600;}
+.modal-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.modal-btn{padding:14px 28px;font-size:15px;}
+#settings-screen{z-index:60;}
+.settings-header{text-align:center;margin-bottom:28px;padding-top:20px;position:relative;}
+.settings-header h2{font-size:22px;font-weight:800;}
+.setting-item{display:flex;justify-content:space-between;align-items:center;padding:18px;margin-bottom:14px;}
+.setting-label{font-weight:700;font-size:15px;}
+.setting-desc{font-size:11px;color:var(--text-light);font-weight:600;margin-top:2px;}
+.toggle{width:52px;height:28px;border-radius:14px;position:relative;cursor:pointer;transition:all 0.3s ease;background:var(--bg);box-shadow:inset 3px 3px 6px var(--shadow-dark),inset -3px -3px 6px var(--shadow-light);flex-shrink:0;}
+.toggle.active{background:var(--primary);box-shadow:inset 3px 3px 6px rgba(0,0,0,0.2),inset -3px -3px 6px rgba(255,255,255,0.1);}
+.toggle-knob{width:24px;height:24px;border-radius:50%;background:var(--bg);position:absolute;top:2px;left:2px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:2px 2px 5px var(--shadow-dark),-2px -2px 5px var(--shadow-light);}
+.toggle.active .toggle-knob{transform:translateX(24px);background:#fff;}
+#howto-screen{z-index:50;}
+.howto-content{padding:18px 0;line-height:1.7;}
+.howto-item{display:flex;align-items:center;gap:15px;margin-bottom:16px;padding:16px;}
+.howto-icon{font-size:28px;width:46px;text-align:center;flex-shrink:0;}
+.howto-item strong{font-family:var(--font-display);font-size:14px;}
+.back-btn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;}
+.stars-display{font-size:24px;letter-spacing:6px;margin-bottom:14px;}
+.star-filled{color:var(--warning);filter:drop-shadow(0 2px 4px rgba(245,158,11,0.4));}
+.star-empty{color:var(--text-light);opacity:0.3;}
+.boss-warning{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:800;color:var(--danger);text-align:center;z-index:200;animation:bossWarning 2.5s ease-out forwards;pointer-events:none;width:90%;text-shadow:0 4px 12px rgba(248,113,113,0.3);font-family:var(--font-display);}
+@keyframes bossWarning{0%{transform:translate(-50%,-50%) scale(0) rotate(-10deg);opacity:0;}20%{transform:translate(-50%,-50%) scale(1.2) rotate(5deg);opacity:1;}40%{transform:translate(-50%,-50%) scale(1) rotate(0deg);opacity:1;}80%{transform:translate(-50%,-50%) scale(1) rotate(0deg);opacity:1;}100%{transform:translate(-50%,-50%) scale(1.8) rotate(0deg);opacity:0;}}
+.score-popup{position:absolute;font-size:17px;font-weight:800;color:var(--primary);pointer-events:none;animation:scorePopup 0.8s ease-out forwards;z-index:100;font-family:var(--font-display);}
+@keyframes scorePopup{0%{transform:translateY(0) scale(0.5);opacity:0;}30%{transform:translateY(-20px) scale(1.2);opacity:1;}100%{transform:translateY(-50px) scale(1);opacity:0;}}
+.achievement-toast{position:fixed;top:-100px;left:50%;transform:translateX(-50%);background:var(--bg);box-shadow:9px 9px 16px var(--shadow-dark),-9px -9px 16px var(--shadow-light);border-radius:18px;padding:14px 20px;display:flex;align-items:center;gap:12px;z-index:2000;transition:top 0.4s cubic-bezier(0.34,1.56,0.64,1);max-width:88vw;}
+.achievement-toast.show{top:20px;}
+.achievement-icon{font-size:30px;}
+.achievement-name{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text);}
+.achievement-reward{font-size:12px;color:var(--gold);font-weight:800;}
+.shop-coins{display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;margin-bottom:18px;font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);}
+.shop-coins-label{font-family:var(--font-body);font-size:12px;color:var(--text-light);font-weight:700;}
+.shop-item{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:14px;}
+.shop-item-icon{font-size:32px;width:44px;text-align:center;flex-shrink:0;}
+.shop-item-info{flex:1;}
+.shop-item-name{font-family:var(--font-display);font-weight:700;font-size:15px;}
+.shop-item-desc{font-size:11px;color:var(--text-light);font-weight:600;margin-top:2px;}
+.shop-item-owned{font-size:11px;color:var(--primary);font-weight:800;margin-top:3px;}
+.shop-buy-btn{padding:10px 16px;font-size:12px;white-space:nowrap;flex-shrink:0;}
+.boss-stats-row{display:flex;gap:12px;margin-bottom:18px;}
+.mini-stat{flex:1;padding:16px;text-align:center;}
+.mini-stat-value{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--primary);}
+.mini-stat-label{font-size:10px;color:var(--text-light);font-weight:700;text-transform:uppercase;margin-top:3px;}
+.achievement-item{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:12px;opacity:0.4;}
+.achievement-item.unlocked{opacity:1;}
+.achievement-item-icon{font-size:30px;width:42px;text-align:center;flex-shrink:0;}
+.achievement-item-name{font-family:var(--font-display);font-weight:700;font-size:14px;}
+.achievement-item-desc{font-size:11px;color:var(--text-light);font-weight:600;margin-top:2px;}
+.achievement-item-reward{font-size:11px;color:var(--gold);font-weight:800;flex-shrink:0;}
+.ad-banner{position:absolute;bottom:0;left:0;right:0;height:54px;border-radius:0;display:flex;align-items:center;justify-content:center;gap:6px;z-index:500;box-shadow:0 -3px 10px rgba(0,0,0,0.08);}
+.ad-banner-label{position:absolute;top:3px;left:8px;font-size:7px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.6px;font-weight:800;}
+.ad-banner-content{font-size:11px;color:var(--text-light);font-weight:700;text-align:center;padding:0 10px;}
+.mock-ad-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,10,20,0.94);display:none;align-items:center;justify-content:center;z-index:3000;}
+.mock-ad-overlay.active{display:flex;}
+.mock-ad-box{text-align:center;color:#fff;padding:30px;max-width:320px;}
+.mock-ad-label{font-size:10px;letter-spacing:1px;color:#ffd166;font-weight:800;margin-bottom:20px;}
+.mock-ad-icon{font-size:60px;margin-bottom:16px;animation:pulse 1.2s ease-in-out infinite;}
+.mock-ad-text{font-size:15px;font-weight:700;margin-bottom:16px;}
+.mock-ad-countdown{width:56px;height:56px;border-radius:50%;border:3px solid #ffd166;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-family:var(--font-display);font-size:22px;font-weight:800;}
+.mock-ad-note{font-size:11px;color:#9aa0ad;line-height:1.5;}
+.powerup-bar{display:flex;gap:10px;justify-content:center;margin-bottom:10px;}
+.powerup-btn{position:relative;padding:9px 12px;font-size:20px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px;}
+.powerup-count{font-size:10px;font-family:var(--font-display);font-weight:700;color:var(--primary);}
+.powerup-btn.disabled{opacity:0.35;pointer-events:none;}
+.powerup-btn.armed{box-shadow:0 0 0 3px var(--primary),6px 6px 12px var(--shadow-dark),-6px -6px 12px var(--shadow-light);}
+.cell.hammer-target{cursor:crosshair;animation:hintPulse 0.8s ease infinite;}
+@media(max-width:400px){.level-grid{grid-template-columns:repeat(4,1fr);}}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--shadow-dark);border-radius:3px;}
+</style>
+</head>
+<body>
+<div id="game-container">
+<div id="splash-screen" class="screen">
+<div class="logo-container neu-flat"><span class="logo-text">🍓</span><span class="logo-spark">✨</span></div>
+<h1 class="game-title">Fruit <span>Fusion</span></h1>
+<p class="game-subtitle">SWIPE · MATCH · FUSE</p>
+<div class="neu-pressed" style="padding:10px 30px;border-radius:20px;">
+<div style="width:200px;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;">
+<div id="loading-bar" style="width:0%;height:100%;background:linear-gradient(90deg,var(--primary),#a78bfa);border-radius:4px;transition:width 0.3s ease;"></div>
+</div>
+</div>
+</div>
+
+<div id="menu-screen" class="screen hidden">
+<div class="menu-header">
+<div class="neu-flat" style="width:86px;height:86px;border-radius:50%;display:flex;justify-content:center;align-items:center;margin:0 auto 14px;animation:float 3s ease infinite;"><span style="font-size:42px;">🍓</span></div>
+<h1 class="menu-title">Fruit <span>Fusion</span></h1>
+</div>
+<div class="menu-stats neu-flat">
+<div class="stat-item"><div class="stat-value" id="menu-level">1</div><div class="stat-label">Level</div></div>
+<div class="stat-item"><div class="stat-value" id="menu-stars">0</div><div class="stat-label">Stars</div></div>
+<div class="stat-item"><div class="stat-value" id="menu-score">0</div><div class="stat-label">Score</div></div>
+<div class="stat-item"><div class="stat-value" id="menu-coins">🪙0</div><div class="stat-label">Coins</div></div>
+</div>
+<div class="menu-buttons">
+<button class="neu-btn menu-btn primary" onclick="showScreen('level-screen')"><span class="icon">🎮</span><span>Play</span></button>
+<button class="neu-btn menu-btn success" onclick="startInfiniteMode()"><span class="icon">👹</span><span>Boss Mode</span></button>
+<div class="menu-row">
+<button class="neu-btn menu-btn-sm" onclick="showScreen('shop-screen')"><span class="icon">🛒</span><span>Shop</span></button>
+<button class="neu-btn menu-btn-sm" onclick="showScreen('achievements-screen')"><span class="icon">🏆</span><span>Awards</span></button>
+</div>
+<button class="neu-btn menu-btn" onclick="showScreen('settings-screen')"><span class="icon">⚙️</span><span>Settings</span></button>
+<button class="neu-btn menu-btn" onclick="showScreen('howto-screen')"><span class="icon">❓</span><span>How to Play</span></button>
+</div>
+</div>
+
+<div id="level-screen" class="screen hidden">
+<div class="level-header">
+<button class="neu-btn back-btn" onclick="showScreen('menu-screen')">←</button>
+<h2>Select Level</h2>
+<div style="width:44px;"></div>
+</div>
+<div class="level-grid" id="level-grid"></div>
+</div>
+
+<div id="game-screen" class="screen hidden">
+<div class="game-header">
+<div class="game-info">
+<div class="info-box neu-pressed"><div class="info-value" id="score-display">0</div><div class="info-label">Score</div></div>
+<div class="info-box neu-pressed" id="moves-box"><div class="info-value" id="moves-display">20</div><div class="info-label">Moves</div></div>
+</div>
+<div class="level-info"><div class="level-number" id="level-display">1</div><div class="level-type" id="level-type">Classic</div></div>
+<button class="neu-btn pause-btn" onclick="pauseGame()">⏸</button>
+</div>
+<div class="progress-container neu-flat" id="goal-container">
+<div class="progress-bar neu-pressed"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+<div class="progress-text" id="progress-text">Reach 1,000 points</div>
+</div>
+<div class="boss-bar neu-flat" id="boss-bar" style="display:none;">
+<div class="boss-header"><span class="boss-name" id="boss-name">Fruit Boss</span><span class="boss-hp-text" id="boss-hp-text">1000 HP</span></div>
+<div class="boss-health-bar neu-pressed"><div class="boss-health-fill" id="boss-health-fill" style="width:100%"></div></div>
+</div>
+<div class="powerup-bar" id="powerup-bar"></div>
+<div class="board-container"><div id="game-board" class="neu-flat"></div></div>
+</div>
+
+<div id="settings-screen" class="screen hidden">
+<div class="settings-header">
+<button class="neu-btn back-btn" onclick="showScreen('menu-screen')" style="position:absolute;left:0;top:12px;">←</button>
+<h2>Settings</h2>
+</div>
+<div class="setting-item neu-flat"><div><div class="setting-label">Sound Effects</div><div class="setting-desc">Play match &amp; slash sounds</div></div><div class="toggle active" id="sound-toggle" onclick="toggleSetting('sound')"><div class="toggle-knob"></div></div></div>
+<div class="setting-item neu-flat"><div><div class="setting-label">Music</div><div class="setting-desc">Beautiful background music</div></div><div class="toggle" id="music-toggle" onclick="toggleSetting('music')"><div class="toggle-knob"></div></div></div>
+<div class="setting-item neu-flat"><div><div class="setting-label">Vibration</div><div class="setting-desc">Haptic feedback on actions</div></div><div class="toggle active" id="vibration-toggle" onclick="toggleSetting('vibration')"><div class="toggle-knob"></div></div></div>
+<div class="setting-item neu-flat"><div><div class="setting-label">Reset Progress</div><div class="setting-desc">Clear all game data</div></div><button class="neu-btn" style="padding:8px 16px;font-size:12px;color:var(--danger);" onclick="resetProgress()">Reset</button></div>
+</div>
+
+<div id="howto-screen" class="screen hidden">
+<div class="settings-header">
+<button class="neu-btn back-btn" onclick="showScreen('menu-screen')" style="position:absolute;left:0;top:12px;">←</button>
+<h2>How to Play</h2>
+</div>
+<div class="howto-content">
+<div class="howto-item neu-flat"><span class="howto-icon">👆</span><div><strong>Swipe to Swap</strong><br><span style="color:var(--text-light);font-size:13px;">Swipe up, down, left, or right on a fruit to swap with an adjacent one</span></div></div>
+<div class="howto-item neu-flat"><span class="howto-icon">🎯</span><div><strong>Match 3+</strong><br><span style="color:var(--text-light);font-size:13px;">Line up 3 or more identical fruits to clear them</span></div></div>
+<div class="howto-item neu-flat"><span class="howto-icon">✨</span><div><strong>Striped Fruit</strong><br><span style="color:var(--text-light);font-size:13px;">Match 4 in a row to create a Striped Fruit — swap it to clear its whole row or column</span></div></div>
+<div class="howto-item neu-flat"><span class="howto-icon">💎</span><div><strong>Fusion Gem</strong><br><span style="color:var(--text-light);font-size:13px;">Match 5, or cross two lines at once, to create a Fusion Gem — swap it with any fruit to clear every piece of that kind</span></div></div>
+<div class="howto-item neu-flat"><span class="howto-icon">⭐</span><div><strong>Earn Stars</strong><br><span style="color:var(--text-light);font-size:13px;">Complete levels with high scores to earn up to 3 stars</span></div></div>
+<div class="howto-item neu-flat"><span class="howto-icon">👹</span><div><strong>Boss Mode</strong><br><span style="color:var(--text-light);font-size:13px;">Defeat the Fruit Boss by matching fruits to deal damage</span></div></div>
+</div>
+</div>
+
+<div id="shop-screen" class="screen hidden">
+<div class="settings-header">
+<button class="neu-btn back-btn" onclick="showScreen('menu-screen')" style="position:absolute;left:0;top:12px;">←</button>
+<h2>Shop</h2>
+</div>
+<div class="shop-coins neu-flat"><span>🪙</span><span id="shop-coins-value">0</span><span class="shop-coins-label">coins</span></div>
+<div id="shop-list"></div>
+<p style="text-align:center;color:var(--text-light);font-size:12px;font-weight:700;margin-top:14px;padding:0 10px;">Earn coins by completing levels, defeating bosses, unlocking achievements, and your daily reward.</p>
+</div>
+
+<div id="achievements-screen" class="screen hidden">
+<div class="settings-header">
+<button class="neu-btn back-btn" onclick="showScreen('menu-screen')" style="position:absolute;left:0;top:12px;">←</button>
+<h2>Awards</h2>
+</div>
+<div class="boss-stats-row">
+<div class="mini-stat neu-flat"><div class="mini-stat-value" id="best-wave-value">0</div><div class="mini-stat-label">Best Wave</div></div>
+<div class="mini-stat neu-flat"><div class="mini-stat-value" id="best-infinite-score">0</div><div class="mini-stat-label">Best Boss Score</div></div>
+</div>
+<div id="achievements-list"></div>
+</div>
+
+<div class="modal-overlay" id="modal">
+<div class="modal-content neu-flat">
+<div class="modal-icon-wrap neu-flat"><div class="modal-icon" id="modal-icon">🏆</div></div>
+<h2 class="modal-title" id="modal-title">Level Complete!</h2>
+<p class="modal-text" id="modal-text">Great job!</p>
+<div class="stars-display" id="modal-stars">⭐⭐⭐</div>
+<div class="modal-buttons">
+<button class="neu-btn modal-btn" id="modal-btn1" onclick="closeModal()">Menu</button>
+<button class="neu-btn modal-btn success" id="modal-btn3" onclick="closeModal()" style="display:none;">Watch Ad</button>
+<button class="neu-btn modal-btn primary" id="modal-btn2" onclick="nextLevel()">Next</button>
+</div>
+</div>
+</div>
+
+<div class="mock-ad-overlay" id="mock-ad-overlay">
+<div class="mock-ad-box">
+<div class="mock-ad-label">ADVERTISEMENT — SIMULATED</div>
+<div class="mock-ad-icon">📺</div>
+<div class="mock-ad-text">Playing rewarded video ad…</div>
+<div class="mock-ad-countdown" id="mock-ad-countdown">3</div>
+<div class="mock-ad-note">This is a placeholder. Connect a real ad SDK to run live ads.</div>
+</div>
+</div>
+
+<div class="ad-banner neu-flat" id="ad-banner-container">
+<span class="ad-banner-label">Advertisement</span>
+<span class="ad-banner-content">🍓 Banner ad slot (320×50) — connect AdMob/AdSense</span>
+</div>
+</div>
+<script>
+const FRUITS=['🍎','🍊','🍇','🍓','🍌','🍑','🍍','🥝'];
+const BOMB_TOKEN='💎';
+const FRUIT_COLORS={'🍎':'#ff6b6b','🍊':'#feca57','🍇':'#a29bfe','🍓':'#ff6b81','🍌':'#f9ca24','🍑':'#fab1a0','🍍':'#ffeaa7','🥝':'#55efc4','💎':'#a78bfa'};
+const BOSS_NAMES=['Sour Lemon Lord','Grape Guardian','Banana Bandit','Pineapple Prince','Apple Assassin','Kiwi King','Peach Phantom','Strawberry Sentinel','Fruit Fusion Beast','Citrus Cyclone','Berry Blaster','Tropical Titan','Melon Marauder','Cherry Champion','Mango Monarch'];
+
+const LEVELS=[];
+for(let i=1;i<=100;i++){
+  const isBoss=i%10===0;
+  const fruitTypes=Math.min(4+Math.floor(i/12),8);
+  const gridSize=i<=15?6:i<=40?7:8;
+  const moves=isBoss?30:Math.max(12,28-Math.floor(i/8));
+  const targetScore=800+(i*400)+(Math.floor(i/10)*1500);
+  LEVELS.push({
+    id:i,type:isBoss?'boss':'classic',fruitTypes:fruitTypes,gridSize:gridSize,
+    moves:moves,targetScore:targetScore,targetFruits:isBoss?null:Math.floor(targetScore/100),
+    bossHP:isBoss?1500+(Math.floor(i/10)*1200):null,
+    bossName:isBoss?BOSS_NAMES[(Math.floor(i/10)-1)%BOSS_NAMES.length]:null,
+    starThresholds:[Math.floor(targetScore*0.25),Math.floor(targetScore*0.6),targetScore]
+  });
+}
+
+const POWERUPS={
+  hammer:{name:'Hammer',icon:'🔨',cost:40,desc:'Tap any one fruit to remove it instantly'},
+  shuffle:{name:'Shuffle',icon:'🔀',cost:30,desc:'Reshuffle the board without using a move'},
+  extraMoves:{name:'+5 Moves',icon:'➕',cost:50,desc:'Add 5 extra moves to the current level'}
+};
+
+const ACHIEVEMENTS={
+  first_win:{name:'First Steps',desc:'Complete your first level',icon:'🥉',reward:30},
+  ten_levels:{name:'Getting Fruity',desc:'Complete 10 levels',icon:'🥈',reward:60},
+  fifty_levels:{name:'Fusion Master',desc:'Complete 50 levels',icon:'🥇',reward:150},
+  first_boss:{name:'Boss Slayer',desc:'Defeat your first boss',icon:'👹',reward:80},
+  five_bosses:{name:'Boss Hunter',desc:'Defeat 5 bosses',icon:'⚔️',reward:150},
+  combo_5:{name:'Combo Master',desc:'Reach a 5x combo in one chain',icon:'🔥',reward:100},
+  three_stars_10:{name:'Perfectionist',desc:'Earn 3 stars on 10 levels',icon:'⭐',reward:120},
+  wave_10:{name:'Endless Warrior',desc:'Reach Wave 10 in Boss Mode',icon:'♾️',reward:200}
+};
+
+// ==================== AD MANAGER ====================
+// This is a pluggable ad integration layer, not a live ad network connection —
+// no client-side JS can call a real ad SDK without your own account and
+// credentials. Two real paths once you're ready:
+//   1) Native app (recommended for real revenue): wrap this game with
+//      Capacitor/Cordova and use an AdMob plugin (e.g. capacitor-community/admob).
+//      That gives real banner + rewarded video ads with proper fill rates.
+//   2) Hosted web/PWA: use Google AdSense (banner) + Google Ad Manager
+//      rewarded ads. Requires an approved AdSense account and a live domain —
+//      it will not work inside a preview or a locally-opened file.
+// Everywhere marked TODO(real ads) is exactly where you'd swap in the real
+// SDK calls. Until then, AD_CONFIG.provider stays 'mock' so you can test the
+// full ad-watching flow and UI right now.
+const AD_CONFIG={
+  provider:'android', // 'android' uses native AdMob via WebView bridge; 'mock' for browser testing
+  admobAppId:'YOUR_ADMOB_APP_ID',
+  bannerAdUnitId:'YOUR_BANNER_AD_UNIT_ID',
+  rewardedAdUnitId:'YOUR_REWARDED_AD_UNIT_ID',
+  mockAdSeconds:3,
+  continueMovesReward:5
+};
+
+const AdManager={
+  // Detect native Android bridge (injected by the WebView)
+  _hasNative(){ return typeof window.AndroidAds !== 'undefined'; },
+  initBanner(){
+    if(this._hasNative()){
+      try{ window.AndroidAds.showBanner(); }catch(e){ console.warn('AndroidAds.showBanner failed',e); }
+      // Hide the HTML placeholder banner so the native banner shows cleanly
+      const el=document.getElementById('ad-banner-container');
+      if(el)el.style.display='none';
+      return;
+    }
+    // Fallback mock for browser / non-Android
+    const el=document.getElementById('ad-banner-container');
+    if(el)el.style.display='flex';
+  },
+  hideBanner(){
+    if(this._hasNative()){
+      try{ window.AndroidAds.hideBanner(); }catch(e){}
+    }
+    const el=document.getElementById('ad-banner-container');
+    if(el)el.style.display='none';
+  },
+  showInterstitial(){
+    if(this._hasNative()){
+      try{ window.AndroidAds.showInterstitial(); }catch(e){ console.warn(e); }
+      return;
+    }
+    // no-op in mock
+  },
+  showRewardedAd(onReward,onNoReward){
+    if(this._hasNative()){
+      // Store callbacks so Android can invoke them after the ad finishes
+      window._adRewardCallback = (typeof onReward === 'function') ? onReward : null;
+      window._adNoRewardCallback = (typeof onNoReward === 'function') ? onNoReward : null;
+      try{
+        window.AndroidAds.showRewarded();
+      }catch(e){
+        console.warn('AndroidAds.showRewarded failed',e);
+        if(typeof onNoReward==='function') onNoReward();
+      }
+      return;
+    }
+    // Browser / mock fallback
+    openMockAdOverlay(onReward,onNoReward);
+  }
+};
+
+// Called from native Android when a rewarded ad is successfully completed
+window.onAndroidRewarded = function(){
+  if(typeof window._adRewardCallback === 'function'){
+    try{ window._adRewardCallback(); }catch(e){}
+  }
+  window._adRewardCallback = null;
+  window._adNoRewardCallback = null;
+};
+// Called from native when the rewarded ad is closed without earning the reward
+window.onAndroidRewardedClosed = function(){
+  if(typeof window._adNoRewardCallback === 'function'){
+    try{ window._adNoRewardCallback(); }catch(e){}
+  }
+  window._adRewardCallback = null;
+  window._adNoRewardCallback = null;
+};
+
+let mockAdTimer=null;
+function openMockAdOverlay(onReward,onNoReward){
+  const overlay=document.getElementById('mock-ad-overlay');
+  const countdownEl=document.getElementById('mock-ad-countdown');
+  if(!overlay||!countdownEl){if(typeof onReward==='function')onReward();return;}
+  let remaining=AD_CONFIG.mockAdSeconds;
+  countdownEl.textContent=remaining;
+  overlay.classList.add('active');
+  if(mockAdTimer)clearInterval(mockAdTimer);
+  mockAdTimer=setInterval(()=>{
+    remaining--;
+    if(remaining<=0){
+      clearInterval(mockAdTimer);
+      mockAdTimer=null;
+      overlay.classList.remove('active');
+      if(typeof onReward==='function')onReward();
+    }else{
+      countdownEl.textContent=remaining;
+    }
+  },1000);
+}
+
+let gameState={
+  currentScreen:'splash',currentLevel:1,unlockedLevel:1,totalStars:0,totalScore:0,levelStars:{},
+  settings:{sound:true,music:false,vibration:true},
+  board:[],selectedCell:null,score:0,moves:0,combo:0,isProcessing:false,isPaused:false,
+  bossHP:0,maxBossHP:0,infiniteLevel:0,isInfinite:false,
+  swipeStart:null,swipeCell:null,isSwiping:false,
+  coins:50,powerups:{hammer:1,shuffle:1,extraMoves:1},activePowerup:null,
+  lastLoginDate:null,loginStreak:0,
+  achievements:{},bestWave:0,bestInfiniteScore:0,totalBossesDefeated:0,maxComboEver:0,
+  continueUsedThisAttempt:false
+};
+
+// ==================== SPECIAL-TILE HELPERS ====================
+function isBomb(cell){return cell===BOMB_TOKEN;}
+function isStriped(cell){return typeof cell==='string'&&(cell.startsWith('H:')||cell.startsWith('V:'));}
+function stripedDir(cell){return cell.charAt(0);}
+function baseFruit(cell){
+  if(cell==null)return null;
+  if(isBomb(cell))return null;
+  if(isStriped(cell))return cell.slice(2);
+  return cell;
+}
+function specialEmoji(cell){
+  if(isBomb(cell))return BOMB_TOKEN;
+  if(isStriped(cell))return baseFruit(cell);
+  return cell;
+}
+function renderCellContent(cellEl,val){
+  cellEl.textContent=specialEmoji(val);
+  const colorKey=isBomb(val)?BOMB_TOKEN:baseFruit(val);
+  cellEl.style.background=(FRUIT_COLORS[colorKey]||'#cccccc')+'22';
+  cellEl.classList.remove('special-h','special-v','special-bomb');
+  if(isStriped(val)){cellEl.classList.add(stripedDir(val)==='H'?'special-h':'special-v');}
+  else if(isBomb(val)){cellEl.classList.add('special-bomb');}
+}
+
+// ==================== AUDIO ENGINE ====================
+const AudioContext=window.AudioContext||window.webkitAudioContext;
+let audioCtx=null,musicPlaying=false;
+
+function initAudio(){if(!audioCtx)audioCtx=new AudioContext();}
+
+function playSound(type){
+  if(!gameState.settings.sound||!audioCtx)return;
+  const now=audioCtx.currentTime;
+  switch(type){
+    case'select':{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='sine';o.frequency.setValueAtTime(880,now);o.frequency.exponentialRampToValueAtTime(1100,now+0.08);
+      g.gain.setValueAtTime(0.08,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.12);
+      o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+0.12);break;
+    }
+    case'slash':{
+      const o1=audioCtx.createOscillator(),o2=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o1.type='sine';o1.frequency.setValueAtTime(1200,now);o1.frequency.exponentialRampToValueAtTime(2400,now+0.15);
+      o2.type='triangle';o2.frequency.setValueAtTime(1800,now);o2.frequency.exponentialRampToValueAtTime(3600,now+0.1);
+      g.gain.setValueAtTime(0.12,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.25);
+      o1.connect(g);o2.connect(g);g.connect(audioCtx.destination);
+      o1.start(now);o2.start(now);o1.stop(now+0.25);o2.stop(now+0.25);
+      const o3=audioCtx.createOscillator(),g3=audioCtx.createGain();
+      o3.type='sine';o3.frequency.setValueAtTime(3000,now+0.05);o3.frequency.exponentialRampToValueAtTime(5000,now+0.2);
+      g3.gain.setValueAtTime(0.04,now+0.05);g3.gain.exponentialRampToValueAtTime(0.001,now+0.25);
+      o3.connect(g3);g3.connect(audioCtx.destination);o3.start(now+0.05);o3.stop(now+0.25);break;
+    }
+    case'match':{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='sine';o.frequency.setValueAtTime(523,now);o.frequency.exponentialRampToValueAtTime(1047,now+0.15);
+      g.gain.setValueAtTime(0.1,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.2);
+      o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+0.2);break;
+    }
+    case'combo':{
+      [0,0.08,0.16].forEach((delay,i)=>{
+        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.type='sine';
+        const freqs=[[659,988],[784,1175],[1047,1568]];
+        o.frequency.setValueAtTime(freqs[i][0],now+delay);o.frequency.exponentialRampToValueAtTime(freqs[i][1],now+delay+0.12);
+        g.gain.setValueAtTime(0.1,now+delay);g.gain.exponentialRampToValueAtTime(0.001,now+delay+0.18);
+        o.connect(g);g.connect(audioCtx.destination);o.start(now+delay);o.stop(now+delay+0.18);
+      });break;
+    }
+    case'big-combo':{
+      [0,0.06,0.12,0.18].forEach((delay,i)=>{
+        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.type='sine';const freqs=[1047,1319,1568,2093];
+        o.frequency.setValueAtTime(freqs[i],now+delay);o.frequency.exponentialRampToValueAtTime(freqs[i]*1.5,now+delay+0.1);
+        g.gain.setValueAtTime(0.12,now+delay);g.gain.exponentialRampToValueAtTime(0.001,now+delay+0.2);
+        o.connect(g);g.connect(audioCtx.destination);o.start(now+delay);o.stop(now+delay+0.2);
+      });break;
+    }
+    case'boss-hit':{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='sawtooth';o.frequency.setValueAtTime(300,now);o.frequency.exponentialRampToValueAtTime(80,now+0.25);
+      g.gain.setValueAtTime(0.15,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.3);
+      o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+0.3);
+      const o2=audioCtx.createOscillator(),g2=audioCtx.createGain();
+      o2.type='square';o2.frequency.setValueAtTime(150,now);o2.frequency.exponentialRampToValueAtTime(40,now+0.2);
+      g2.gain.setValueAtTime(0.08,now);g2.gain.exponentialRampToValueAtTime(0.001,now+0.25);
+      o2.connect(g2);g2.connect(audioCtx.destination);o2.start(now);o2.stop(now+0.25);break;
+    }
+    case'win':{
+      const notes=[523,659,784,1047,1319];
+      notes.forEach((freq,i)=>{
+        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.type='sine';o.frequency.setValueAtTime(freq,now+i*0.12);
+        g.gain.setValueAtTime(0.12,now+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.12+0.35);
+        o.connect(g);g.connect(audioCtx.destination);o.start(now+i*0.12);o.stop(now+i*0.12+0.35);
+      });
+      const harm=[659,784,988,1319,1568];
+      harm.forEach((freq,i)=>{
+        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.type='triangle';o.frequency.setValueAtTime(freq,now+i*0.12+0.04);
+        g.gain.setValueAtTime(0.05,now+i*0.12+0.04);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.12+0.3);
+        o.connect(g);g.connect(audioCtx.destination);o.start(now+i*0.12+0.04);o.stop(now+i*0.12+0.3);
+      });break;
+    }
+    case'lose':{
+      const notes=[400,350,300,200];
+      notes.forEach((freq,i)=>{
+        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.type='sine';o.frequency.setValueAtTime(freq,now+i*0.15);
+        g.gain.setValueAtTime(0.1,now+i*0.15);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.15+0.4);
+        o.connect(g);g.connect(audioCtx.destination);o.start(now+i*0.15);o.stop(now+i*0.15+0.4);
+      });break;
+    }
+    case'level-up':{
+      const arp=[523,659,784,1047,1319,1568,2093];
+      arp.forEach((freq,i)=>{
+        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.type='sine';o.frequency.setValueAtTime(freq,now+i*0.08);
+        g.gain.setValueAtTime(0.1,now+i*0.08);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.08+0.2);
+        o.connect(g);g.connect(audioCtx.destination);o.start(now+i*0.08);o.stop(now+i*0.08+0.2);
+      });break;
+    }
+    case'boss-appear':{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='sawtooth';o.frequency.setValueAtTime(100,now);o.frequency.exponentialRampToValueAtTime(50,now+1);
+      g.gain.setValueAtTime(0.1,now);g.gain.exponentialRampToValueAtTime(0.001,now+1.2);
+      o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+1.2);
+      const o2=audioCtx.createOscillator(),g2=audioCtx.createGain();
+      o2.type='square';o2.frequency.setValueAtTime(80,now);o2.frequency.exponentialRampToValueAtTime(30,now+1);
+      g2.gain.setValueAtTime(0.06,now);g2.gain.exponentialRampToValueAtTime(0.001,now+1.2);
+      o2.connect(g2);g2.connect(audioCtx.destination);o2.start(now);o2.stop(now+1.2);break;
+    }
+  }
+}
+
+// ==================== BACKGROUND MUSIC ====================
+const MUSIC_NOTES=[
+  {f:523,d:0.4},{f:659,d:0.4},{f:784,d:0.4},{f:659,d:0.4},
+  {f:523,d:0.4},{f:659,d:0.4},{f:784,d:0.4},{f:1047,d:0.8},
+  {f:784,d:0.4},{f:659,d:0.4},{f:523,d:0.4},{f:659,d:0.4},
+  {f:784,d:0.4},{f:659,d:0.4},{f:523,d:0.4},{f:392,d:0.8},
+  {f:440,d:0.4},{f:523,d:0.4},{f:659,d:0.4},{f:523,d:0.4},
+  {f:440,d:0.4},{f:523,d:0.4},{f:659,d:0.4},{f:784,d:0.8},
+  {f:659,d:0.4},{f:523,d:0.4},{f:440,d:0.4},{f:392,d:0.4},
+  {f:440,d:0.4},{f:523,d:0.4},{f:659,d:0.4},{f:523,d:0.8}
+];
+
+function startMusic(){
+  if(!gameState.settings.music||!audioCtx||musicPlaying)return;
+  musicPlaying=true;
+  let noteIndex=0;
+  function playNextNote(){
+    if(!musicPlaying||!gameState.settings.music)return;
+    const note=MUSIC_NOTES[noteIndex];
+    const now=audioCtx.currentTime;
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type='sine';o.frequency.setValueAtTime(note.f,now);
+    g.gain.setValueAtTime(0.03,now);g.gain.exponentialRampToValueAtTime(0.001,now+note.d);
+    o.connect(g);g.connect(audioCtx.destination);
+    o.start(now);o.stop(now+note.d);
+    const o2=audioCtx.createOscillator(),g2=audioCtx.createGain();
+    o2.type='triangle';o2.frequency.setValueAtTime(note.f*0.5,now);
+    g2.gain.setValueAtTime(0.015,now);g2.gain.exponentialRampToValueAtTime(0.001,now+note.d);
+    o2.connect(g2);g2.connect(audioCtx.destination);
+    o2.start(now);o2.stop(now+note.d);
+    noteIndex=(noteIndex+1)%MUSIC_NOTES.length;
+    setTimeout(playNextNote,note.d*1000);
+  }
+  playNextNote();
+}
+function stopMusic(){musicPlaying=false;}
+
+// ==================== VIBRATION ====================
+function doVibrate(pattern){
+  if(gameState.settings.vibration&&navigator.vibrate){
+    try{navigator.vibrate(pattern);}catch(e){}
+  }
+}
+
+// ==================== SCREEN MANAGEMENT ====================
+function showScreen(screenId){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.add('hidden');s.classList.remove('left');});
+  const target=document.getElementById(screenId);
+  const current=document.getElementById(gameState.currentScreen+'-screen');
+  if(current&&target){
+    const screens=['splash','menu','level','game','settings','howto','shop','achievements'];
+    const currentIdx=screens.indexOf(gameState.currentScreen);
+    const targetIdx=screens.indexOf(screenId.replace('-screen',''));
+    if(targetIdx<currentIdx)current.classList.add('left');
+  }
+  target.classList.remove('hidden');
+  gameState.currentScreen=screenId.replace('-screen','');
+  if(gameState.currentScreen!=='game'&&hintTimeoutId){clearTimeout(hintTimeoutId);hintTimeoutId=null;}
+  if(screenId==='menu-screen'){
+    updateMenuStats();
+    if(gameState.settings.music)startMusic();
+    if(!dailyRewardChecked){dailyRewardChecked=true;checkDailyReward();}
+  }
+  else if(screenId==='level-screen')renderLevelGrid();
+  else if(screenId==='shop-screen')renderShop();
+  else if(screenId==='achievements-screen')renderAchievements();
+  else if(screenId==='game-screen'){if(gameState.settings.music)startMusic();}
+  else stopMusic();
+}
+
+// ==================== SHOP ====================
+function renderShop(){
+  document.getElementById('shop-coins-value').textContent=gameState.coins.toLocaleString();
+  const list=document.getElementById('shop-list');
+  list.innerHTML='';
+  Object.keys(POWERUPS).forEach(key=>{
+    const p=POWERUPS[key];
+    const owned=gameState.powerups[key]||0;
+    const canAfford=gameState.coins>=p.cost;
+    const item=document.createElement('div');
+    item.className='shop-item neu-flat';
+    item.innerHTML='<div class="shop-item-icon">'+p.icon+'</div>'+
+      '<div class="shop-item-info"><div class="shop-item-name">'+p.name+'</div>'+
+      '<div class="shop-item-desc">'+p.desc+'</div>'+
+      '<div class="shop-item-owned">Owned: '+owned+'</div></div>'+
+      '<button class="neu-btn shop-buy-btn'+(canAfford?' primary':'')+'">🪙 '+p.cost+'</button>';
+    item.querySelector('button').onclick=function(){buyPowerup(key);};
+    list.appendChild(item);
+  });
+}
+
+function buyPowerup(key){
+  const p=POWERUPS[key];
+  if(!p||gameState.coins<p.cost){
+    playSound('lose');
+    return;
+  }
+  gameState.coins-=p.cost;
+  gameState.powerups[key]=(gameState.powerups[key]||0)+1;
+  playSound('match');doVibrate(20);
+  saveGame();
+  renderShop();
+}
+
+// ==================== ACHIEVEMENTS SCREEN ====================
+function renderAchievements(){
+  document.getElementById('best-wave-value').textContent=gameState.bestWave;
+  document.getElementById('best-infinite-score').textContent=gameState.bestInfiniteScore.toLocaleString();
+  const list=document.getElementById('achievements-list');
+  list.innerHTML='';
+  Object.keys(ACHIEVEMENTS).forEach(key=>{
+    const a=ACHIEVEMENTS[key];
+    const unlocked=!!gameState.achievements[key];
+    const item=document.createElement('div');
+    item.className='achievement-item neu-flat'+(unlocked?' unlocked':'');
+    item.innerHTML='<div class="achievement-item-icon">'+(unlocked?a.icon:'🔒')+'</div>'+
+      '<div style="flex:1;"><div class="achievement-item-name">'+a.name+'</div>'+
+      '<div class="achievement-item-desc">'+a.desc+'</div></div>'+
+      '<div class="achievement-item-reward">+'+a.reward+' 🪙</div>';
+    list.appendChild(item);
+  });
+}
+
+function startSplash(){
+  const bar=document.getElementById('loading-bar');
+  let progress=0;
+  const interval=setInterval(()=>{
+    progress+=Math.random()*25+5;
+    if(progress>=100){progress=100;clearInterval(interval);setTimeout(()=>showScreen('menu-screen'),600);}
+    bar.style.width=progress+'%';
+  },150);
+}
+
+function updateMenuStats(){
+  document.getElementById('menu-level').textContent=gameState.unlockedLevel;
+  document.getElementById('menu-stars').textContent=gameState.totalStars;
+  document.getElementById('menu-score').textContent=gameState.totalScore.toLocaleString();
+  document.getElementById('menu-coins').textContent='🪙'+gameState.coins.toLocaleString();
+}
+
+function renderLevelGrid(){
+  const grid=document.getElementById('level-grid');
+  grid.innerHTML='';
+  for(let i=1;i<=100;i++){
+    const level=LEVELS[i-1];
+    const isUnlocked=i<=gameState.unlockedLevel;
+    const isCompleted=gameState.levelStars[i]!==undefined;
+    const isCurrent=i===gameState.unlockedLevel&&!isCompleted;
+    const stars=gameState.levelStars[i]||0;
+    const btn=document.createElement('button');
+    btn.className='neu-btn level-btn'+(!isUnlocked?' locked':'')+(isCompleted?' completed':'')+(isCurrent?' current':'')+(level.type==='boss'?' boss-level':'');
+    btn.innerHTML='<span style="font-size:'+(level.type==='boss'?'20px':'15px')+'">'+(isUnlocked?(level.type==='boss'?'👹':i):'🔒')+'</span>'+(isCompleted?'<span class="level-stars">'+'⭐'.repeat(stars)+'</span>':'');
+    btn.onclick=function(){if(isUnlocked){initAudio();startLevel(i);}};
+    grid.appendChild(btn);
+  }
+}
+
+// ==================== GAME LOGIC ====================
+function startLevel(levelId){
+  gameState.isInfinite=false;
+  gameState.currentLevel=levelId;
+  const level=LEVELS[levelId-1];
+  gameState.score=0;gameState.moves=level.moves;gameState.combo=0;
+  gameState.isProcessing=false;gameState.isPaused=false;gameState.activePowerup=null;gameState.continueUsedThisAttempt=false;
+  document.getElementById('level-display').textContent=levelId;
+  document.getElementById('level-type').textContent=level.type==='boss'?'👹 Boss':'Classic';
+  document.getElementById('score-display').textContent='0';
+  updateMovesDisplay();
+  renderPowerupBar();
+  if(level.type==='boss'){
+    gameState.bossHP=level.bossHP;gameState.maxBossHP=level.bossHP;
+    document.getElementById('boss-bar').style.display='block';
+    document.getElementById('boss-name').textContent=level.bossName;
+    document.getElementById('boss-hp-text').textContent=level.bossHP+' HP';
+    document.getElementById('boss-health-fill').style.width='100%';
+    document.getElementById('goal-container').style.display='none';
+    playSound('boss-appear');doVibrate([80,40,80,40,120]);
+    setTimeout(()=>showBossWarning(level.bossName),300);
+  }else{
+    document.getElementById('boss-bar').style.display='none';
+    document.getElementById('goal-container').style.display='block';
+    document.getElementById('progress-text').textContent='Reach '+level.targetScore.toLocaleString()+' points';
+    document.getElementById('progress-fill').style.width='0%';
+  }
+  createBoard(level.gridSize,level.fruitTypes);
+  showScreen('game-screen');
+  scheduleHint(5000);
+}
+
+function startInfiniteMode(){
+  initAudio();
+  gameState.isInfinite=true;gameState.infiniteLevel=1;gameState.score=0;
+  gameState.moves=35;gameState.combo=0;gameState.isProcessing=false;gameState.isPaused=false;gameState.activePowerup=null;gameState.continueUsedThisAttempt=false;
+  const bossName=BOSS_NAMES[Math.floor(Math.random()*BOSS_NAMES.length)];
+  gameState.bossHP=2500;gameState.maxBossHP=2500;
+  document.getElementById('level-display').textContent='∞';
+  document.getElementById('level-type').textContent='👹 Infinite Boss';
+  document.getElementById('score-display').textContent='0';
+  updateMovesDisplay();
+  renderPowerupBar();
+  document.getElementById('boss-bar').style.display='block';
+  document.getElementById('boss-name').textContent=bossName+' (Infinite)';
+  document.getElementById('boss-hp-text').textContent='2500 HP';
+  document.getElementById('boss-health-fill').style.width='100%';
+  document.getElementById('goal-container').style.display='none';
+  playSound('boss-appear');doVibrate([100,50,100,50,150]);
+  setTimeout(()=>showBossWarning(bossName+' (Infinite Mode)'),300);
+  createBoard(8,8);
+  showScreen('game-screen');
+  scheduleHint(5000);
+}
+
+function showBossWarning(text){
+  const warning=document.createElement('div');
+  warning.className='boss-warning';
+  warning.textContent='👹 '+text;
+  document.getElementById('game-screen').appendChild(warning);
+  setTimeout(()=>warning.remove(),2500);
+}
+
+// ==================== RESPONSIVE BOARD SIZING ====================
+// Fixes fruits getting clipped by #game-container's overflow:hidden on larger
+// grids (7x7/8x8 boards used by later levels and Boss Mode) — cell size is now
+// computed from the actual available width instead of a fixed pixel value.
+function computeCellSize(gridSize){
+  const boardEl=document.getElementById('game-board');
+  const container=boardEl&&boardEl.parentElement?boardEl.parentElement:null;
+  const containerWidth=container?container.clientWidth:340;
+  const containerHeight=container?container.clientHeight:340;
+  const gap=6;
+  const boardPadding=24;
+  const availableWidth=Math.max(120,containerWidth-boardPadding);
+  const availableHeight=Math.max(120,containerHeight-boardPadding);
+  const widthBased=Math.floor((availableWidth-gap*(gridSize-1))/gridSize);
+  const heightBased=Math.floor((availableHeight-gap*(gridSize-1))/gridSize);
+  let size=Math.min(widthBased,heightBased);
+  size=Math.max(24,Math.min(56,size));
+  return size;
+}
+function applyCellSize(gridSize){
+  const board=document.getElementById('game-board');
+  if(board)board.style.setProperty('--cell-size',computeCellSize(gridSize)+'px');
+}
+window.addEventListener('resize',function(){
+  if(gameState.currentScreen==='game'&&gameState.board.length){
+    applyCellSize(gameState.board.length);
+  }
+});
+
+function createBoard(size,fruitTypes){
+  const board=document.getElementById('game-board');
+  board.innerHTML='';
+  board.style.gridTemplateColumns='repeat('+size+',1fr)';
+  applyCellSize(size);
+  gameState.board=[];
+  const availableFruits=FRUITS.slice(0,fruitTypes);
+  for(let row=0;row<size;row++){
+    gameState.board[row]=[];
+    for(let col=0;col<size;col++){
+      let fruit;
+      do{fruit=availableFruits[Math.floor(Math.random()*availableFruits.length)];
+      }while((col>=2&&gameState.board[row][col-1]===fruit&&gameState.board[row][col-2]===fruit)||
+             (row>=2&&gameState.board[row-1][col]===fruit&&gameState.board[row-2][col]===fruit));
+      gameState.board[row][col]=fruit;
+      const cell=document.createElement('div');
+      cell.className='cell neu-btn';
+      cell.dataset.row=row;cell.dataset.col=col;
+      renderCellContent(cell,fruit);
+      setupCellEvents(cell,row,col);
+      board.appendChild(cell);
+    }
+  }
+}
+
+// ==================== SWIPE CONTROLS ====================
+function setupCellEvents(cell,row,col){
+  let startX,startY,startTime;
+  const minSwipe=20;
+
+  function onStart(e){
+    if(gameState.isProcessing||gameState.isPaused||gameState.moves<=0)return;
+    const touch=e.touches?e.touches[0]:e;
+    startX=touch.clientX;startY=touch.clientY;startTime=Date.now();
+    gameState.swipeCell={row,col};
+    gameState.isSwiping=true;
+    cell.style.transform='scale(0.92)';
+    playSound('select');doVibrate(15);
+  }
+
+  function onMove(e){
+    if(!gameState.isSwiping||!gameState.swipeCell)return;
+    e.preventDefault();
+    const touch=e.touches?e.touches[0]:e;
+    const dx=touch.clientX-startX;
+    const dy=touch.clientY-startY;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist>8){
+      cell.style.transition='transform 0.15s ease';
+      cell.style.transform='translate('+(dx*0.3)+'px,'+(dy*0.3)+'px) scale(0.95)';
+    }
+  }
+
+  function onEnd(e){
+    if(!gameState.isSwiping||!gameState.swipeCell)return;
+    cell.style.transform='';
+    cell.style.transition='';
+    gameState.isSwiping=false;
+
+    if(gameState.activePowerup==='hammer'){
+      useHammerOn(row,col);
+      gameState.swipeCell=null;
+      return;
+    }
+
+    const touch=e.changedTouches?e.changedTouches[0]:e;
+    const dx=touch.clientX-startX;
+    const dy=touch.clientY-startY;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const elapsed=Date.now()-startTime;
+
+    if(dist<minSwipe&&elapsed<300){
+      handleTap(row,col);
+      gameState.swipeCell=null;
+      return;
+    }
+
+    if(dist>=minSwipe){
+      let dRow=0,dCol=0;
+      if(Math.abs(dx)>Math.abs(dy)){dCol=dx>0?1:-1;}
+      else{dRow=dy>0?1:-1;}
+      const targetRow=row+dRow;
+      const targetCol=col+dCol;
+      const size=gameState.board.length;
+      if(targetRow>=0&&targetRow<size&&targetCol>=0&&targetCol<size){
+        attemptSwap(row,col,targetRow,targetCol);
+      }
+    }
+    gameState.swipeCell=null;
+  }
+
+  cell.addEventListener('touchstart',onStart,{passive:false});
+  cell.addEventListener('touchmove',onMove,{passive:false});
+  cell.addEventListener('touchend',onEnd,{passive:false});
+  cell.addEventListener('mousedown',onStart);
+  cell.addEventListener('mousemove',onMove);
+  cell.addEventListener('mouseup',onEnd);
+  cell.addEventListener('mouseleave',()=>{
+    if(gameState.isSwiping){cell.style.transform='';cell.style.transition='';gameState.isSwiping=false;gameState.swipeCell=null;}
+  });
+}
+
+function handleTap(row,col){
+  if(gameState.isProcessing||gameState.isPaused||gameState.moves<=0)return;
+  const cells=document.querySelectorAll('.cell');
+  const index=row*gameState.board.length+col;
+  const cell=cells[index];
+
+  if(!gameState.selectedCell){
+    gameState.selectedCell={row,col};
+    cell.classList.add('selected');
+    playSound('select');doVibrate(15);
+  }else{
+    const prev=gameState.selectedCell;
+    const prevIndex=prev.row*gameState.board.length+prev.col;
+    const prevCell=cells[prevIndex];
+    prevCell.classList.remove('selected');
+    gameState.selectedCell=null;
+
+    if(prev.row===row&&prev.col===col)return;
+
+    const isAdjacent=Math.abs(prev.row-row)+Math.abs(prev.col-col)===1;
+    if(isAdjacent){
+      attemptSwap(prev.row,prev.col,row,col);
+    }else{
+      gameState.selectedCell={row,col};
+      cell.classList.add('selected');
+      playSound('select');
+    }
+  }
+}
+
+function updateMovesDisplay(){
+  const el=document.getElementById('moves-display');
+  el.textContent=gameState.moves;
+  const box=document.getElementById('moves-box');
+  if(box)box.classList.toggle('low-moves',gameState.moves<=5&&gameState.moves>0);
+}
+
+// ==================== POWER-UPS (in-game) ====================
+function renderPowerupBar(){
+  const bar=document.getElementById('powerup-bar');
+  if(!bar)return;
+  bar.innerHTML='';
+  Object.keys(POWERUPS).forEach(key=>{
+    const p=POWERUPS[key];
+    const owned=gameState.powerups[key]||0;
+    const btn=document.createElement('button');
+    btn.className='neu-btn powerup-btn'+(owned<=0?' disabled':'')+(gameState.activePowerup===key?' armed':'');
+    btn.innerHTML='<span>'+p.icon+'</span><span class="powerup-count">'+owned+'</span>';
+    btn.onclick=function(){activatePowerup(key);};
+    bar.appendChild(btn);
+  });
+}
+
+function showFloatingLabel(text){
+  const boardEl=document.getElementById('game-board');
+  if(!boardEl)return;
+  const label=document.createElement('div');
+  label.className='combo-text';
+  label.style.left='50%';label.style.top='30%';
+  label.textContent=text;
+  boardEl.appendChild(label);
+  setTimeout(()=>label.remove(),1200);
+}
+
+function activatePowerup(key){
+  if(gameState.isProcessing||gameState.isPaused)return;
+  const owned=gameState.powerups[key]||0;
+  if(owned<=0){playSound('lose');return;}
+
+  if(key==='extraMoves'){
+    gameState.powerups.extraMoves--;
+    gameState.moves+=5;
+    updateMovesDisplay();
+    playSound('level-up');doVibrate([30,20,30]);
+    showFloatingLabel('+5 Moves!');
+    saveGame();renderPowerupBar();
+  }else if(key==='shuffle'){
+    gameState.powerups.shuffle--;
+    reshuffleBoard();
+    playSound('slash');doVibrate([30,20,30]);
+    saveGame();renderPowerupBar();
+  }else if(key==='hammer'){
+    gameState.activePowerup=(gameState.activePowerup==='hammer')?null:'hammer';
+    renderPowerupBar();
+    document.querySelectorAll('#game-board .cell').forEach(c=>c.classList.toggle('hammer-target',gameState.activePowerup==='hammer'));
+  }
+}
+
+function useHammerOn(row,col){
+  if(gameState.isProcessing||gameState.isPaused)return;
+  const owned=gameState.powerups.hammer||0;
+  if(owned<=0)return;
+  gameState.powerups.hammer--;
+  gameState.activePowerup=null;
+  document.querySelectorAll('#game-board .cell').forEach(c=>c.classList.remove('hammer-target'));
+  renderPowerupBar();
+  saveGame();
+
+  gameState.isProcessing=true;
+  playSound('boss-hit');doVibrate([40,30,60]);
+  const size=gameState.board.length;
+  const cells=document.querySelectorAll('.cell');
+  const idx=row*size+col;
+  if(cells[idx])cells[idx].classList.add('matched');
+
+  setTimeout(()=>{
+    gameState.board[row][col]=null;
+    applyGravity();
+    const level=gameState.isInfinite?null:LEVELS[gameState.currentLevel-1];
+    fillEmptyCells(level?level.fruitTypes:8);
+    renderBoardWithAnimation();
+    setTimeout(()=>{
+      const result=computeMatchResult(null);
+      if(result){
+        processMatchResult(result);
+      }else{
+        gameState.isProcessing=false;
+      }
+    },550);
+  },350);
+}
+
+function reshuffleBoard(){
+  const size=gameState.board.length;
+  const positions=[];
+  const pool=[];
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    const v=gameState.board[r][c];
+    if(!isStriped(v)&&!isBomb(v)){positions.push({r,c});pool.push(v);}
+  }
+  for(let i=pool.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    const tmp=pool[i];pool[i]=pool[j];pool[j]=tmp;
+  }
+  positions.forEach((pos,i)=>{gameState.board[pos.r][pos.c]=pool[i];});
+  renderBoardWithAnimation();
+  gameState.isProcessing=true;
+  setTimeout(()=>{
+    const result=computeMatchResult(null);
+    if(result){
+      processMatchResult(result);
+    }else{
+      gameState.isProcessing=false;
+    }
+  },550);
+}
+
+// ==================== MATCH DETECTION (with special-tile support) ====================
+function findMatchRuns(){
+  const size=gameState.board.length;
+  const horizontalRuns=[],verticalRuns=[];
+  for(let row=0;row<size;row++){
+    let col=0;
+    while(col<size){
+      const fruit=baseFruit(gameState.board[row][col]);
+      if(fruit==null){col++;continue;}
+      let end=col;
+      while(end+1<size&&baseFruit(gameState.board[row][end+1])===fruit){end++;}
+      const len=end-col+1;
+      if(len>=3)horizontalRuns.push({row,colStart:col,colEnd:end,fruit,len});
+      col=end+1;
+    }
+  }
+  for(let col=0;col<size;col++){
+    let row=0;
+    while(row<size){
+      const fruit=baseFruit(gameState.board[row][col]);
+      if(fruit==null){row++;continue;}
+      let end=row;
+      while(end+1<size&&baseFruit(gameState.board[end+1][col])===fruit){end++;}
+      const len=end-row+1;
+      if(len>=3)verticalRuns.push({col,rowStart:row,rowEnd:end,fruit,len});
+      row=end+1;
+    }
+  }
+  return{horizontalRuns,verticalRuns};
+}
+
+function pickAnchorCell(run,isHorizontal,preferred,usedAnchors){
+  function free(r,c){
+    const key=r+','+c;
+    if(usedAnchors.has(key))return false;
+    const v=gameState.board[r][c];
+    return!isStriped(v)&&!isBomb(v);
+  }
+  if(preferred&&free(preferred.row,preferred.col))return preferred;
+  if(isHorizontal){
+    for(let c=run.colStart;c<=run.colEnd;c++){if(free(run.row,c))return{row:run.row,col:c};}
+    return{row:run.row,col:preferred?preferred.col:Math.floor((run.colStart+run.colEnd)/2)};
+  }
+  for(let r=run.rowStart;r<=run.rowEnd;r++){if(free(r,run.col))return{row:r,col:run.col};}
+  return{row:preferred?preferred.row:Math.floor((run.rowStart+run.rowEnd)/2),col:run.col};
+}
+
+function computeMatchResult(swapHint){
+  const{horizontalRuns,verticalRuns}=findMatchRuns();
+  if(horizontalRuns.length===0&&verticalRuns.length===0)return null;
+
+  const matchedCells=new Set();
+  const cellRunInfo={};
+  horizontalRuns.forEach(run=>{
+    for(let c=run.colStart;c<=run.colEnd;c++){
+      const key=run.row+','+c;
+      matchedCells.add(key);
+      cellRunInfo[key]=cellRunInfo[key]||{};
+      cellRunInfo[key].h=run;
+    }
+  });
+  verticalRuns.forEach(run=>{
+    for(let r=run.rowStart;r<=run.rowEnd;r++){
+      const key=r+','+run.col;
+      matchedCells.add(key);
+      cellRunInfo[key]=cellRunInfo[key]||{};
+      cellRunInfo[key].v=run;
+    }
+  });
+
+  const specialsToCreate=[];
+  const usedAnchors=new Set();
+
+  Object.keys(cellRunInfo).forEach(key=>{
+    const info=cellRunInfo[key];
+    if(info.h&&info.v){
+      const parts=key.split(',');
+      const r=Number(parts[0]),c=Number(parts[1]);
+      const v=gameState.board[r][c];
+      if(!isStriped(v)&&!isBomb(v)){
+        specialsToCreate.push({row:r,col:c,type:'BOMB',fruit:info.h.fruit});
+        usedAnchors.add(key);
+      }
+    }
+  });
+
+  horizontalRuns.forEach(run=>{
+    if(run.len>=4){
+      let preferred=null;
+      if(swapHint&&run.row===swapHint.row&&swapHint.col>=run.colStart&&swapHint.col<=run.colEnd){
+        preferred={row:run.row,col:swapHint.col};
+      }
+      const anchor=pickAnchorCell(run,true,preferred,usedAnchors);
+      const key=anchor.row+','+anchor.col;
+      if(!usedAnchors.has(key)){
+        specialsToCreate.push({row:anchor.row,col:anchor.col,type:run.len>=5?'BOMB':'H',fruit:run.fruit});
+        usedAnchors.add(key);
+      }
+    }
+  });
+  verticalRuns.forEach(run=>{
+    if(run.len>=4){
+      let preferred=null;
+      if(swapHint&&run.col===swapHint.col&&swapHint.row>=run.rowStart&&swapHint.row<=run.rowEnd){
+        preferred={row:swapHint.row,col:run.col};
+      }
+      const anchor=pickAnchorCell(run,false,preferred,usedAnchors);
+      const key=anchor.row+','+anchor.col;
+      if(!usedAnchors.has(key)){
+        specialsToCreate.push({row:anchor.row,col:anchor.col,type:run.len>=5?'BOMB':'V',fruit:run.fruit});
+        usedAnchors.add(key);
+      }
+    }
+  });
+
+  return{matchedCells,specialsToCreate};
+}
+
+function expandSpecialEffects(initialSet){
+  const size=gameState.board.length;
+  const toClear=new Set(initialSet);
+  const queue=Array.from(initialSet);
+  while(queue.length){
+    const key=queue.shift();
+    const parts=key.split(',');
+    const r=Number(parts[0]),c=Number(parts[1]);
+    const val=gameState.board[r][c];
+    if(isStriped(val)){
+      const dir=stripedDir(val);
+      if(dir==='H'){
+        for(let cc=0;cc<size;cc++){const k=r+','+cc;if(!toClear.has(k)){toClear.add(k);queue.push(k);}}
+      }else{
+        for(let rr=0;rr<size;rr++){const k=rr+','+c;if(!toClear.has(k)){toClear.add(k);queue.push(k);}}
+      }
+    }
+  }
+  return toClear;
+}
+
+function collectCellsWithFruit(fruit){
+  const set=new Set();
+  const size=gameState.board.length;
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    if(baseFruit(gameState.board[r][c])===fruit)set.add(r+','+c);
+  }
+  return set;
+}
+
+function allCellsSet(size){
+  const set=new Set();
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++)set.add(r+','+c);
+  return set;
+}
+
+// ==================== SWAP HANDLING ====================
+function attemptSwap(row1,col1,row2,col2){
+  if(gameState.isProcessing||gameState.isPaused||gameState.moves<=0)return;
+  gameState.isProcessing=true;
+
+  const cells=document.querySelectorAll('.cell');
+  const size=gameState.board.length;
+  const idx1=row1*size+col1;
+  const idx2=row2*size+col2;
+  const cell1=cells[idx1];
+  const cell2=cells[idx2];
+
+  const temp=gameState.board[row1][col1];
+  gameState.board[row1][col1]=gameState.board[row2][col2];
+  gameState.board[row2][col2]=temp;
+
+  const rect1=cell1.getBoundingClientRect();
+  const rect2=cell2.getBoundingClientRect();
+  const dx=rect2.left-rect1.left;
+  const dy=rect2.top-rect1.top;
+
+  cell1.style.transition='transform 0.2s ease';
+  cell2.style.transition='transform 0.2s ease';
+  cell1.style.transform='translate('+dx+'px,'+dy+'px)';
+  cell2.style.transform='translate('+(-dx)+'px,'+(-dy)+'px)';
+
+  setTimeout(()=>{
+    cell1.style.transition='';
+    cell2.style.transition='';
+    cell1.style.transform='';
+    cell2.style.transform='';
+
+    const valAtDest=gameState.board[row2][col2];
+    const valAtSrc=gameState.board[row1][col1];
+    const destIsBomb=isBomb(valAtDest),srcIsBomb=isBomb(valAtSrc);
+    const destIsStriped=isStriped(valAtDest),srcIsStriped=isStriped(valAtSrc);
+
+    if(destIsBomb||srcIsBomb){
+      gameState.moves--;updateMovesDisplay();
+      let toClear;
+      if(destIsBomb&&srcIsBomb){
+        toClear=allCellsSet(size);
+      }else{
+        const otherVal=destIsBomb?valAtSrc:valAtDest;
+        const fruit=baseFruit(otherVal);
+        toClear=fruit!=null?collectCellsWithFruit(fruit):new Set();
+        toClear.add(row1+','+col1);toClear.add(row2+','+col2);
+        if(isStriped(otherVal))toClear=expandSpecialEffects(toClear);
+      }
+      playSound('big-combo');doVibrate([70,40,70,40,100]);
+      finalizeClear(toClear,[]);
+      return;
+    }
+
+    if(destIsStriped||srcIsStriped){
+      gameState.moves--;updateMovesDisplay();
+      let toClear=new Set([row1+','+col1,row2+','+col2]);
+      toClear=expandSpecialEffects(toClear);
+      playSound('boss-hit');doVibrate([50,30,50]);
+      finalizeClear(toClear,[]);
+      return;
+    }
+
+    const swapHint={row:row2,col:col2};
+    const matchResult=computeMatchResult(swapHint);
+    if(matchResult){
+      gameState.moves--;updateMovesDisplay();
+      doVibrate([30,50,30]);playSound('slash');
+      processMatchResult(matchResult);
+    }else{
+      const temp2=gameState.board[row1][col1];
+      gameState.board[row1][col1]=gameState.board[row2][col2];
+      gameState.board[row2][col2]=temp2;
+
+      cell1.style.transition='transform 0.2s ease';
+      cell2.style.transition='transform 0.2s ease';
+      cell1.style.transform='translate('+dx+'px,'+dy+'px)';
+      cell2.style.transform='translate('+(-dx)+'px,'+(-dy)+'px)';
+
+      setTimeout(()=>{
+        cell1.style.transition='';
+        cell2.style.transition='';
+        cell1.style.transform='';
+        cell2.style.transform='';
+        updateBoardVisuals();
+        cell1.classList.add('shake');
+        cell2.classList.add('shake');
+        doVibrate([40,30,40]);
+        setTimeout(()=>{cell1.classList.remove('shake');cell2.classList.remove('shake');},400);
+        gameState.isProcessing=false;
+      },200);
+    }
+  },200);
+}
+
+function updateBoardVisuals(){
+  const cells=document.querySelectorAll('.cell');
+  const size=gameState.board.length;
+  cells.forEach((cell,index)=>{
+    const row=Math.floor(index/size);
+    const col=index%size;
+    renderCellContent(cell,gameState.board[row][col]);
+  });
+}
+
+function processMatchResult(matchResult){
+  const anchors=new Set((matchResult.specialsToCreate||[]).map(s=>s.row+','+s.col));
+  const baseClear=new Set(Array.from(matchResult.matchedCells).filter(k=>!anchors.has(k)));
+  let expanded=expandSpecialEffects(baseClear);
+  anchors.forEach(a=>expanded.delete(a));
+  finalizeClear(expanded,matchResult.specialsToCreate);
+}
+
+// ==================== CLEAR / GRAVITY / REFILL PIPELINE ====================
+function finalizeClear(cellsToClearSet,specialsToCreate){
+  specialsToCreate=specialsToCreate||[];
+  if(cellsToClearSet.size===0&&specialsToCreate.length===0){
+    gameState.isProcessing=false;
+    return;
+  }
+  const size=gameState.board.length;
+  const cells=document.querySelectorAll('.cell');
+  const level=gameState.isInfinite?null:LEVELS[gameState.currentLevel-1];
+  const clearedCount=cellsToClearSet.size;
+  const comboMultiplier=Math.max(1,gameState.combo);
+  const specialBonus=specialsToCreate.reduce((sum,s)=>sum+(s.type==='BOMB'?150:60),0);
+  const points=clearedCount*15*comboMultiplier+specialBonus;
+  gameState.score+=points;
+  document.getElementById('score-display').textContent=gameState.score.toLocaleString();
+
+  if(level&&level.type==='classic'){
+    const progress=Math.min(100,(gameState.score/level.targetScore)*100);
+    document.getElementById('progress-fill').style.width=progress+'%';
+  }
+
+  if((level&&level.type==='boss')||gameState.isInfinite){
+    const damage=clearedCount*20*comboMultiplier+specialBonus;
+    gameState.bossHP=Math.max(0,gameState.bossHP-damage);
+    const hpPercent=(gameState.bossHP/gameState.maxBossHP)*100;
+    document.getElementById('boss-health-fill').style.width=hpPercent+'%';
+    document.getElementById('boss-hp-text').textContent=Math.max(0,gameState.bossHP)+' HP';
+    playSound('boss-hit');
+    doVibrate(clearedCount>=6?[70,30,70,30,90]:[50]);
+    const board=document.getElementById('game-board');
+    const damageText=document.createElement('div');
+    damageText.className='damage-text';
+    damageText.textContent='-'+damage;
+    damageText.style.left='50%';damageText.style.top='35%';
+    board.appendChild(damageText);setTimeout(()=>damageText.remove(),1000);
+  }
+
+  const boardEl=document.getElementById('game-board');
+  const boardRect=boardEl.getBoundingClientRect();
+  const refArr=Array.from(cellsToClearSet);
+  const refKey=refArr[Math.floor(refArr.length/2)]||(specialsToCreate[0]&&(specialsToCreate[0].row+','+specialsToCreate[0].col));
+  if(refKey){
+    const parts=refKey.split(',');
+    const rr=Number(parts[0]),rc=Number(parts[1]);
+    const idx=rr*size+rc;
+    if(cells[idx]){
+      const rect=cells[idx].getBoundingClientRect();
+      const scorePopup=document.createElement('div');
+      scorePopup.className='score-popup';
+      scorePopup.textContent='+'+points;
+      scorePopup.style.left=(rect.left-boardRect.left+rect.width/2-20)+'px';
+      scorePopup.style.top=(rect.top-boardRect.top)+'px';
+      boardEl.appendChild(scorePopup);
+      setTimeout(()=>scorePopup.remove(),800);
+    }
+  }
+
+  cellsToClearSet.forEach(key=>{
+    const parts=key.split(',');
+    const r=Number(parts[0]),c=Number(parts[1]);
+    const index=r*size+c;
+    const cellEl=cells[index];
+    if(!cellEl)return;
+    cellEl.classList.add('matched');
+    const rect=cellEl.getBoundingClientRect();
+    const particle=document.createElement('div');
+    particle.className='particle';
+    particle.textContent=specialEmoji(gameState.board[r][c])||'✨';
+    particle.style.left=(rect.left-boardRect.left+rect.width/2-10)+'px';
+    particle.style.top=(rect.top-boardRect.top)+'px';
+    boardEl.appendChild(particle);
+    setTimeout(()=>particle.remove(),1200);
+  });
+
+  specialsToCreate.forEach(s=>{
+    const index=s.row*size+s.col;
+    const cellEl=cells[index];
+    if(!cellEl)return;
+    const rect=cellEl.getBoundingClientRect();
+    const label=document.createElement('div');
+    label.className='combo-text';
+    label.style.fontSize='15px';
+    label.textContent=s.type==='BOMB'?'💎 Fusion Gem!':'✨ Striped Fruit!';
+    label.style.left=(rect.left-boardRect.left+rect.width/2)+'px';
+    label.style.top=(rect.top-boardRect.top)+'px';
+    boardEl.appendChild(label);
+    setTimeout(()=>label.remove(),1200);
+  });
+
+  if(gameState.combo>1){
+    const comboText=document.createElement('div');
+    comboText.className='combo-text';
+    comboText.textContent=gameState.combo+'x COMBO!';
+    comboText.style.left='50%';comboText.style.top='40%';
+    boardEl.appendChild(comboText);
+    setTimeout(()=>comboText.remove(),1200);
+    if(gameState.combo>=4)playSound('big-combo');else playSound('combo');
+    doVibrate([30,20,30,20,30]);
+  }else{
+    playSound('match');
+    doVibrate(clearedCount>=4?[40,20,40]:[25]);
+  }
+
+  gameState.combo++;
+  if(gameState.combo>gameState.maxComboEver)gameState.maxComboEver=gameState.combo;
+  if(gameState.combo>=5)unlockAchievement('combo_5');
+
+  setTimeout(()=>{
+    cellsToClearSet.forEach(key=>{
+      const parts=key.split(',');
+      const r=Number(parts[0]),c=Number(parts[1]);
+      gameState.board[r][c]=null;
+    });
+    specialsToCreate.forEach(s=>{
+      const val=s.type==='BOMB'?BOMB_TOKEN:(s.type+':'+s.fruit);
+      gameState.board[s.row][s.col]=val;
+    });
+
+    applyGravity();
+    fillEmptyCells(level?level.fruitTypes:8);
+    renderBoardWithAnimation();
+
+    setTimeout(()=>{
+      const cascadeResult=computeMatchResult(null);
+      if(cascadeResult){
+        const anchors=new Set((cascadeResult.specialsToCreate||[]).map(s=>s.row+','+s.col));
+        const baseClear=new Set(Array.from(cascadeResult.matchedCells).filter(k=>!anchors.has(k)));
+        let expanded=expandSpecialEffects(baseClear);
+        anchors.forEach(a=>expanded.delete(a));
+        setTimeout(()=>finalizeClear(expanded,cascadeResult.specialsToCreate),350);
+      }else{
+        gameState.combo=0;
+        gameState.isProcessing=false;
+        checkGameEnd();
+        scheduleHint(6000);
+      }
+    },550);
+  },400);
+}
+
+function applyGravity(){
+  const size=gameState.board.length;
+  for(let col=0;col<size;col++){
+    let writePos=size-1;
+    for(let row=size-1;row>=0;row--){
+      if(gameState.board[row][col]!==null){
+        if(writePos!==row){
+          gameState.board[writePos][col]=gameState.board[row][col];
+          gameState.board[row][col]=null;
+        }
+        writePos--;
+      }
+    }
+  }
+}
+
+function fillEmptyCells(fruitTypes){
+  const size=gameState.board.length;
+  const availableFruits=FRUITS.slice(0,fruitTypes);
+  for(let row=0;row<size;row++){
+    for(let col=0;col<size;col++){
+      if(gameState.board[row][col]===null){
+        gameState.board[row][col]=availableFruits[Math.floor(Math.random()*availableFruits.length)];
+      }
+    }
+  }
+}
+
+function renderBoardWithAnimation(){
+  const board=document.getElementById('game-board');
+  const size=gameState.board.length;
+  board.innerHTML='';
+  board.style.gridTemplateColumns='repeat('+size+',1fr)';
+  applyCellSize(size);
+  for(let row=0;row<size;row++){
+    for(let col=0;col<size;col++){
+      const val=gameState.board[row][col];
+      const cell=document.createElement('div');
+      cell.className='cell neu-btn falling';
+      cell.dataset.row=row;cell.dataset.col=col;
+      renderCellContent(cell,val);
+      setupCellEvents(cell,row,col);
+      board.appendChild(cell);
+    }
+  }
+  setTimeout(()=>{
+    board.querySelectorAll('.cell').forEach(c=>c.classList.remove('falling'));
+  },500);
+}
+
+// ==================== HINTS ====================
+let hintTimeoutId=null;
+let dailyRewardChecked=false;
+function scheduleHint(delay){
+  if(hintTimeoutId)clearTimeout(hintTimeoutId);
+  hintTimeoutId=setTimeout(()=>{
+    if(gameState.currentScreen==='game'&&!gameState.isPaused&&!gameState.isProcessing)showHint();
+  },delay||6000);
+}
+
+function wouldMatchAt(row,col,nr,nc){
+  const temp=gameState.board[row][col];
+  gameState.board[row][col]=gameState.board[nr][nc];
+  gameState.board[nr][nc]=temp;
+  const result=computeMatchResult(null);
+  const activation=isBomb(gameState.board[row][col])||isBomb(gameState.board[nr][nc])||isStriped(gameState.board[row][col])||isStriped(gameState.board[nr][nc]);
+  gameState.board[nr][nc]=gameState.board[row][col];
+  gameState.board[row][col]=temp;
+  return!!result||activation;
+}
+
+function showHint(){
+  const size=gameState.board.length;
+  for(let row=0;row<size;row++){
+    for(let col=0;col<size;col++){
+      const dirs=[[0,1],[1,0],[0,-1],[-1,0]];
+      for(const dir of dirs){
+        const nr=row+dir[0],nc=col+dir[1];
+        if(nr>=0&&nr<size&&nc>=0&&nc<size){
+          if(wouldMatchAt(row,col,nr,nc)){
+            const cells=document.querySelectorAll('.cell');
+            const idx=row*size+col;
+            if(cells[idx]){
+              cells[idx].classList.add('hint');
+              setTimeout(()=>{if(cells[idx])cells[idx].classList.remove('hint');},3000);
+            }
+            return;
+          }
+        }
+      }
+    }
+  }
+}
+
+function checkGameEnd(){
+  const level=gameState.isInfinite?null:LEVELS[gameState.currentLevel-1];
+
+  if(gameState.isInfinite){
+    if(gameState.bossHP<=0){
+      gameState.infiniteLevel++;
+      if(gameState.infiniteLevel>gameState.bestWave)gameState.bestWave=gameState.infiniteLevel;
+      gameState.coins+=15;
+      gameState.moves+=20;
+      updateMovesDisplay();
+      const newBossName=BOSS_NAMES[Math.floor(Math.random()*BOSS_NAMES.length)];
+      gameState.maxBossHP=2500+(gameState.infiniteLevel*800);
+      gameState.bossHP=gameState.maxBossHP;
+      document.getElementById('boss-name').textContent=newBossName+' (Wave '+gameState.infiniteLevel+')';
+      document.getElementById('boss-hp-text').textContent=gameState.bossHP+' HP';
+      document.getElementById('boss-health-fill').style.width='100%';
+      playSound('level-up');doVibrate([50,30,50,30,50,30,80]);
+      setTimeout(()=>showBossWarning(newBossName+' (Wave '+gameState.infiniteLevel+')'),500);
+      if(gameState.infiniteLevel>=10)unlockAchievement('wave_10');
+      saveGame();
+    }else if(gameState.moves<=0){
+      if(gameState.score>gameState.bestInfiniteScore)gameState.bestInfiniteScore=gameState.score;
+      showModal('gameover','Game Over!','You reached Wave '+gameState.infiniteLevel+' with '+gameState.score.toLocaleString()+' points!',0,!gameState.continueUsedThisAttempt);
+      playSound('lose');doVibrate([100,50,100,50,200]);
+      saveGame();
+    }
+    return;
+  }
+
+  if(level.type==='boss'){
+    if(gameState.bossHP<=0){
+      const stars=calculateStars();
+      gameState.totalBossesDefeated++;
+      gameState.coins+=40+stars*10;
+      showModal('win','Boss Defeated!','You defeated '+level.bossName+'! +'+(40+stars*10)+' coins',stars);
+      playSound('win');doVibrate([50,30,50,30,80]);
+      unlockNextLevel(stars);
+      unlockAchievement('first_boss');
+      if(gameState.totalBossesDefeated>=5)unlockAchievement('five_bosses');
+    }else if(gameState.moves<=0){
+      showModal('lose','Defeated!',level.bossName+' was too strong! Try again!',0,!gameState.continueUsedThisAttempt);
+      playSound('lose');doVibrate([80,40,80,40,150]);
+    }
+  }else{
+    if(gameState.score>=level.targetScore){
+      const stars=calculateStars();
+      const coinsEarned=15+stars*8;
+      gameState.coins+=coinsEarned;
+      showModal('win','Level Complete!','Score: '+gameState.score.toLocaleString()+'  ·  +'+coinsEarned+' coins',stars);
+      playSound('win');doVibrate([50,30,50,30,80]);
+      unlockNextLevel(stars);
+    }else if(gameState.moves<=0){
+      showModal('lose','Out of Moves!','You needed '+level.targetScore.toLocaleString()+' points. Try again!',0,!gameState.continueUsedThisAttempt);
+      playSound('lose');doVibrate([80,40,80,40,150]);
+    }
+  }
+}
+
+function calculateStars(){
+  const level=LEVELS[gameState.currentLevel-1];
+  if(gameState.score>=level.starThresholds[2])return 3;
+  if(gameState.score>=level.starThresholds[1])return 2;
+  return 1;
+}
+
+function unlockNextLevel(stars){
+  gameState.levelStars[gameState.currentLevel]=Math.max(stars,gameState.levelStars[gameState.currentLevel]||0);
+  gameState.totalStars=Object.values(gameState.levelStars).reduce((a,b)=>a+b,0);
+  gameState.totalScore+=gameState.score;
+  if(gameState.currentLevel>=gameState.unlockedLevel&&gameState.currentLevel<100){
+    gameState.unlockedLevel=gameState.currentLevel+1;
+  }
+  const completedCount=Object.keys(gameState.levelStars).length;
+  const threeStarCount=Object.values(gameState.levelStars).filter(s=>s>=3).length;
+  unlockAchievement('first_win');
+  if(completedCount>=10)unlockAchievement('ten_levels');
+  if(completedCount>=50)unlockAchievement('fifty_levels');
+  if(threeStarCount>=10)unlockAchievement('three_stars_10');
+  saveGame();
+}
+
+// ==================== ACHIEVEMENTS ====================
+function unlockAchievement(key){
+  if(gameState.achievements[key])return false;
+  const info=ACHIEVEMENTS[key];
+  if(!info)return false;
+  gameState.achievements[key]=true;
+  gameState.coins+=info.reward;
+  showAchievementToast(info);
+  saveGame();
+  return true;
+}
+
+function showAchievementToast(info){
+  const toast=document.createElement('div');
+  toast.className='achievement-toast';
+  toast.innerHTML='<span class="achievement-icon">'+info.icon+'</span><div><div class="achievement-name">'+info.name+'</div><div class="achievement-reward">+'+info.reward+' coins</div></div>';
+  document.body.appendChild(toast);
+  requestAnimationFrame(()=>toast.classList.add('show'));
+  setTimeout(()=>{
+    toast.classList.remove('show');
+    setTimeout(()=>toast.remove(),400);
+  },3200);
+}
+
+// ==================== MODAL ====================
+// ==================== AD-BASED CONTINUE ====================
+function wireAdContinueButton(btn3){
+  btn3.style.display='inline-block';
+  btn3.textContent='📺 +'+AD_CONFIG.continueMovesReward+' Moves';
+  btn3.onclick=function(){
+    closeModal();
+    AdManager.showRewardedAd(function(){
+      gameState.continueUsedThisAttempt=true;
+      gameState.moves+=AD_CONFIG.continueMovesReward;
+      updateMovesDisplay();
+      showFloatingLabel('+'+AD_CONFIG.continueMovesReward+' Moves!');
+      playSound('level-up');doVibrate([30,20,30,20,60]);
+      saveGame();
+    },function(){
+      // Ad closed early / failed to load — no reward, no changes made.
+    });
+  };
+}
+
+function showModal(type,title,text,stars,canContinue){
+  stars=stars||0;
+  const modal=document.getElementById('modal');
+  const icon=document.getElementById('modal-icon');
+  const titleEl=document.getElementById('modal-title');
+  const textEl=document.getElementById('modal-text');
+  const starsEl=document.getElementById('modal-stars');
+  const btn1=document.getElementById('modal-btn1');
+  const btn2=document.getElementById('modal-btn2');
+  const btn3=document.getElementById('modal-btn3');
+  btn1.style.display='inline-block';
+  btn3.style.display='none';
+
+  if(type==='win'){
+    icon.textContent='🏆';titleEl.style.color='var(--success)';
+    starsEl.innerHTML='⭐'.repeat(stars)+'<span class="star-empty">⭐</span>'.repeat(3-stars);
+    starsEl.style.display='block';
+    btn2.textContent=gameState.isInfinite?'Continue':'Next Level';
+    btn2.style.display='inline-block';
+    btn2.onclick=function(){closeModal();if(gameState.isInfinite){}else if(gameState.currentLevel<100){startLevel(gameState.currentLevel+1);}else{showScreen('menu-screen');}};
+  }else if(type==='lose'){
+    icon.textContent='💔';titleEl.style.color='var(--danger)';
+    starsEl.style.display='none';
+    btn2.textContent='Retry';btn2.style.display='inline-block';
+    btn2.onclick=function(){closeModal();if(gameState.isInfinite){startInfiniteMode();}else{startLevel(gameState.currentLevel);}};
+    if(canContinue)wireAdContinueButton(btn3);
+  }else if(type==='gameover'){
+    icon.textContent='🎮';titleEl.style.color='var(--primary)';
+    starsEl.style.display='none';
+    btn2.textContent='Play Again';btn2.style.display='inline-block';
+    btn2.onclick=function(){closeModal();startInfiniteMode();};
+    if(canContinue)wireAdContinueButton(btn3);
+  }else if(type==='pause'){
+    icon.textContent='⏸';titleEl.style.color='var(--text)';
+    starsEl.style.display='none';
+    btn2.textContent='Resume';btn2.style.display='inline-block';
+    btn2.onclick=function(){closeModal();resumeGame();};
+  }else if(type==='daily'){
+    icon.textContent='🎁';titleEl.style.color='var(--gold)';
+    starsEl.style.display='none';
+    btn1.style.display='none';
+    btn2.textContent='Claim';btn2.style.display='inline-block';
+    btn2.onclick=function(){closeModal();updateMenuStats();};
+  }
+  titleEl.textContent=title;textEl.textContent=text;
+  btn1.textContent='Menu';btn1.onclick=function(){closeModal();showScreen('menu-screen');};
+  modal.classList.add('active');
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('active');}
+function pauseGame(){
+  if(gameState.isPaused)return;
+  gameState.isPaused=true;
+  if(hintTimeoutId){clearTimeout(hintTimeoutId);hintTimeoutId=null;}
+  showModal('pause','Paused','Take a break!');
+}
+function resumeGame(){gameState.isPaused=false;scheduleHint(4000);}
+function nextLevel(){closeModal();if(gameState.currentLevel<100)startLevel(gameState.currentLevel+1);}
+
+// ==================== SETTINGS ====================
+function updateSettingsUI(){
+  document.getElementById('sound-toggle').classList.toggle('active',gameState.settings.sound);
+  document.getElementById('music-toggle').classList.toggle('active',gameState.settings.music);
+  document.getElementById('vibration-toggle').classList.toggle('active',gameState.settings.vibration);
+}
+
+function toggleSetting(setting){
+  gameState.settings[setting]=!gameState.settings[setting];
+  updateSettingsUI();saveGame();
+  if(setting==='music'){
+    if(gameState.settings.music)startMusic();
+    else stopMusic();
+  }
+}
+
+function resetProgress(){
+  if(confirm('Are you sure? All progress will be lost!')){
+    gameState.unlockedLevel=1;gameState.totalStars=0;gameState.totalScore=0;gameState.levelStars={};
+    saveGame();updateMenuStats();showScreen('menu-screen');
+  }
+}
+
+// ==================== SAVE/LOAD (localStorage) ====================
+function loadGame(){
+  try{
+    const saved=localStorage.getItem('fruitFusion');
+    if(saved){
+      const data=JSON.parse(saved);
+      gameState.unlockedLevel=data.unlockedLevel||1;
+      gameState.totalStars=data.totalStars||0;
+      gameState.totalScore=data.totalScore||0;
+      gameState.levelStars=data.levelStars||{};
+      gameState.settings=Object.assign({},gameState.settings,data.settings||{});
+      gameState.coins=(typeof data.coins==='number')?data.coins:50;
+      gameState.powerups=Object.assign({hammer:1,shuffle:1,extraMoves:1},data.powerups||{});
+      gameState.lastLoginDate=data.lastLoginDate||null;
+      gameState.loginStreak=data.loginStreak||0;
+      gameState.achievements=data.achievements||{};
+      gameState.bestWave=data.bestWave||0;
+      gameState.bestInfiniteScore=data.bestInfiniteScore||0;
+      gameState.totalBossesDefeated=data.totalBossesDefeated||0;
+      gameState.maxComboEver=data.maxComboEver||0;
+    }
+  }catch(e){console.log('No saved progress found, starting fresh.',e);}
+  updateSettingsUI();
+}
+
+function saveGame(){
+  try{
+    localStorage.setItem('fruitFusion',JSON.stringify({
+      unlockedLevel:gameState.unlockedLevel,totalStars:gameState.totalStars,
+      totalScore:gameState.totalScore,levelStars:gameState.levelStars,settings:gameState.settings,
+      coins:gameState.coins,powerups:gameState.powerups,
+      lastLoginDate:gameState.lastLoginDate,loginStreak:gameState.loginStreak,
+      achievements:gameState.achievements,bestWave:gameState.bestWave,
+      bestInfiniteScore:gameState.bestInfiniteScore,totalBossesDefeated:gameState.totalBossesDefeated,
+      maxComboEver:gameState.maxComboEver
+    }));
+  }catch(e){console.log('Save failed',e);}
+}
+
+// ==================== DAILY REWARD ====================
+function todayKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+function dailyRewardForStreak(streak){
+  const capped=Math.min(streak,7);
+  return 20+capped*10;
+}
+function checkDailyReward(){
+  const today=todayKey();
+  if(gameState.lastLoginDate===today)return;
+  let yesterday=new Date();
+  yesterday.setDate(yesterday.getDate()-1);
+  const yesterdayKey=yesterday.getFullYear()+'-'+(yesterday.getMonth()+1)+'-'+yesterday.getDate();
+  if(gameState.lastLoginDate===yesterdayKey){
+    gameState.loginStreak=(gameState.loginStreak||0)+1;
+  }else{
+    gameState.loginStreak=1;
+  }
+  gameState.lastLoginDate=today;
+  const reward=dailyRewardForStreak(gameState.loginStreak);
+  gameState.coins+=reward;
+  saveGame();
+  setTimeout(()=>{
+    showModal('daily','Daily Reward!','Day '+gameState.loginStreak+' streak — +'+reward+' coins!');
+  },400);
+}
+
+// ==================== INIT ====================
+window.onload=function(){loadGame();startSplash();AdManager.initBanner();};
+
+document.addEventListener('touchmove',function(e){if(e.target.closest('#game-board'))e.preventDefault();},{passive:false});
+
+let lastTouchEnd=0;
+document.addEventListener('touchend',function(e){
+  const now=Date.now();
+  if(now-lastTouchEnd<=300)e.preventDefault();
+  lastTouchEnd=now;
+},false);
+
+// ==================== PWA SERVICE WORKER ====================
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(err){
+      console.log('Service worker registration failed:',err);
+    });
+  });
+}
+</script>
+</body>
+</html>
