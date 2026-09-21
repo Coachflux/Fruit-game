@@ -1,0 +1,11 @@
+# Copy this file to local.properties and fill in your values.
+# local.properties is git-ignored and should never be committed.
+
+# Optional: path to Android SDK (Gradle will usually find it automatically)
+# sdk.dir=/path/to/Android/Sdk
+
+# Production AdMob IDs (leave blank or omit to keep Google's test IDs)
+# ADMOB_APP_ID=ca-app-pub-xxxxxxxx~yyyyyyyyyy
+# BANNER_AD_UNIT_ID=ca-app-pub-xxxxxxxx/zzzzzzzz
+# INTERSTITIAL_AD_UNIT_ID=ca-app-pub-xxxxxxxx/aaaaaaaa
+# REWARDED_AD_UNIT_ID=ca-app-pub-xxxxxxxx/bbbbbbbb
