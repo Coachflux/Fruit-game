@@ -32,7 +32,10 @@ android {
             def kAlias = System.getenv("KEY_ALIAS")
             def kPassword = System.getenv("KEY_PASSWORD")
 
-            if (ksPath != null && ksPassword != null && kAlias != null && kPassword != null) {
+            if (ksPath != null && !ksPath.isEmpty()
+                    && ksPassword != null && !ksPassword.isEmpty()
+                    && kAlias != null && !kAlias.isEmpty()
+                    && kPassword != null && !kPassword.isEmpty()) {
                 storeFile file(ksPath)
                 storePassword ksPassword
                 keyAlias kAlias
@@ -49,7 +52,11 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            // Only use the release signing config when a keystore was actually provided
+            def hasKeystore = System.getenv("KEYSTORE_PATH") != null && !System.getenv("KEYSTORE_PATH").isEmpty()
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
