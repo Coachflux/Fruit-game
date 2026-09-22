@@ -29,20 +29,28 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Decode keystore
+      - name: Decode keystore (only if secret exists)
+        id: keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > keystore.jks || true
-          echo "KEYSTORE_PATH=$(pwd)/keystore.jks" >> $GITHUB_ENV
-          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+            echo "KEYSTORE_PATH=$(pwd)/keystore.jks" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+            echo "has_keystore=true" >> $GITHUB_OUTPUT
+            echo "Keystore decoded successfully"
+          else
+            echo "has_keystore=false" >> $GITHUB_OUTPUT
+            echo "No keystore secret – release will be unsigned (or use debug signing)"
+          fi
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
-        continue-on-error: true
+        continue-on-error: true   # still allow the job to finish if release fails
 
       - name: Build Release AAB
         run: ./gradlew bundleRelease --stacktrace
