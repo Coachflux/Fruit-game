@@ -7,12 +7,6 @@ android {
     namespace 'io.github.coachflux.fruitfusion'
     compileSdk 35
 
-    // Allow overriding AdMob IDs from local.properties or environment variables (for production / CI).
-    // Priority: environment variable > local.properties > Google test IDs.
-    // Example local.properties:
-    //   ADMOB_APP_ID=ca-app-pub-xxxxxxxx~yyyyyyyy
-    //   BANNER_AD_UNIT_ID=ca-app-pub-xxxxxxxx/zzzzzzzz
-    //   etc.
     def localProps = new Properties()
     def localPropsFile = rootProject.file('local.properties')
     if (localPropsFile.exists()) {
@@ -31,9 +25,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // AdMob IDs — defaults to Google's official TEST IDs for safe development.
-        // Override via local.properties or environment variables for production.
-        def appId = resolve('ADMOB_APP_ID', 'ca-app-pub-3940256099942544~3347511713')
+        def appId = resolve('ADMOB_APP_ID', 'ca-app-pub-3940256099942544\~3347511713')
         def bannerId = resolve('BANNER_AD_UNIT_ID', 'ca-app-pub-3940256099942544/6300978111')
         def interstitialId = resolve('INTERSTITIAL_AD_UNIT_ID', 'ca-app-pub-3940256099942544/1033173712')
         def rewardedId = resolve('REWARDED_AD_UNIT_ID', 'ca-app-pub-3940256099942544/5224354917')
@@ -47,34 +39,29 @@ android {
 
     signingConfigs {
         release {
-            // Populated from environment / GitHub Secrets at build time.
-            // Do NOT hard-code passwords or keystore paths in source control.
-            def keystorePath = System.getenv("KEYSTORE_PATH") ?: System.getenv("ANDROID_KEYSTORE_PATH")
-            def keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-            def keyAlias = System.getenv("KEY_ALIAS")
-            def keyPassword = System.getenv("KEY_PASSWORD")
+            def ksPath = System.getenv("KEYSTORE_PATH")
+            def ksPassword = System.getenv("KEYSTORE_PASSWORD")
+            def kAlias = System.getenv("KEY_ALIAS")
+            def kPassword = System.getenv("KEY_PASSWORD")
 
-            if (keystorePath && keystorePassword && keyAlias && keyPassword) {
-            storeFile file(keystorePath)
-            storePassword keystorePassword
-            keyAlias keyAlias
-            keyPassword keyPassword
-          }
+            if (ksPath != null && ksPassword != null && kAlias != null && kPassword != null) {
+                storeFile file(ksPath)
+                storePassword ksPassword
+                keyAlias kAlias
+                keyPassword kPassword
+            }
         }
     }
 
     buildTypes {
         debug {
             minifyEnabled false
-            // Uses test AdMob IDs from defaultConfig
         }
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (signingConfigs.release.storeFile != null) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
         }
     }
 
@@ -89,7 +76,6 @@ android {
         buildConfig true
         viewBinding true
     }
-    // Ensure assets are packaged correctly
     packaging {
         resources {
             excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
@@ -103,10 +89,6 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.webkit:webkit:1.11.0'
-
-    // Official Google Mobile Ads SDK (AdMob)
     implementation 'com.google.android.gms:play-services-ads:23.3.0'
-
-    // Optional: for better WebView lifecycle handling
     implementation 'androidx.activity:activity-ktx:1.9.1'
 }
