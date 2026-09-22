@@ -31,7 +31,10 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d -i > keystore.jks
+          SIZE=$(stat -c%s keystore.jks)
+          echo "Decoded keystore size: $SIZE bytes"
+          echo "Decoded keystore sha256: $(sha256sum keystore.jks | cut -d' ' -f1)"
           if [ ! -s keystore.jks ]; then
             echo "ERROR: keystore.jks is empty. Check that the ANDROID_KEYSTORE_BASE64 secret is set correctly."
             exit 1
