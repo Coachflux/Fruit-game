@@ -5,21 +5,13 @@ on:
   push:
     branches:
       - main
-      - master
 
 jobs:
   build:
-    name: Build APK and AAB
     runs-on: ubuntu-latest
 
-    env:
-      ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
-      BANNER_AD_UNIT_ID: ${{ secrets.BANNER_AD_UNIT_ID }}
-      INTERSTITIAL_AD_UNIT_ID: ${{ secrets.INTERSTITIAL_AD_UNIT_ID }}
-      REWARDED_AD_UNIT_ID: ${{ secrets.REWARDED_AD_UNIT_ID }}
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -27,24 +19,33 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
+
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-35"
+          sdkmanager "build-tools;35.0.0"
 
       - name: Make Gradle executable
-        run: chmod +x ./gradlew
+        run: chmod +x gradlew
 
-      - name: Verify Gradle
-        run: ./gradlew --version
+      - name: Clean
+        run: ./gradlew clean
 
       - name: Build Debug APK
-        run: ./gradlew clean assembleDebug --stacktrace --no-daemon
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Build Release AAB
+        run: ./gradlew bundleRelease --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -53,50 +54,12 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      - name: Check release signing configuration
-        id: signing
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ] && \
-             [ -n "$KEYSTORE_PASSWORD" ] && \
-             [ -n "$KEY_ALIAS" ] && \
-             [ -n "$KEY_PASSWORD" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Prepare release signing
-        if: steps.signing.outputs.configured == 'true'
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/keystore.jks"
-
-          echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/keystore.jks" >> "$GITHUB_ENV"
-          echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
-
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace --no-daemon
-
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: Fruit-Fusion-release-apk
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
-
-      - name: Build Release AAB
-        run: ./gradlew bundleRelease --stacktrace --no-daemon
 
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
