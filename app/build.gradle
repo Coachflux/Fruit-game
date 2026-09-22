@@ -16,49 +16,49 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // Default = Google test AdMob IDs
-        buildConfigField "String", "ADMOB_APP_ID", '"ca-app-pub-3940256099942544\u007E3347511713"'
-        buildConfigField "String", "BANNER_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/6300978111\""
-        buildConfigField "String", "INTERSTITIAL_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\""
-        buildConfigField "String", "REWARDED_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\""
+        // Google test AdMob IDs
+        buildConfigField "String", "ADMOB_APP_ID", '"ca-app-pub-3940256099942544\~3347511713"'
+        buildConfigField "String", "BANNER_AD_UNIT_ID", '"ca-app-pub-3940256099942544/6300978111"'
+        buildConfigField "String", "INTERSTITIAL_AD_UNIT_ID", '"ca-app-pub-3940256099942544/1033173712"'
+        buildConfigField "String", "REWARDED_AD_UNIT_ID", '"ca-app-pub-3940256099942544/5224354917"'
 
-        manifestPlaceholders = [ADMOB_APP_ID: "ca-app-pub-3940256099942544\u007E3347511713"]
+        manifestPlaceholders = [ADMOB_APP_ID: "ca-app-pub-3940256099942544\~3347511713"]
     }
 
     signingConfigs {
-    release {
-        def ksPath = System.getenv("KEYSTORE_PATH")
-        def ksPassword = System.getenv("KEYSTORE_PASSWORD")
-        def kAlias = System.getenv("KEY_ALIAS")
-        def kPassword = System.getenv("KEY_PASSWORD")
+        release {
+            def ksPath = System.getenv("KEYSTORE_PATH")
+            def ksPassword = System.getenv("KEYSTORE_PASSWORD")
+            def kAlias = System.getenv("KEY_ALIAS")
+            def kPassword = System.getenv("KEY_PASSWORD")
 
-        if (ksPath && file(ksPath).exists()
-                && ksPassword && kAlias && kPassword) {
-            storeFile file(ksPath)
-            storePassword ksPassword
-            keyAlias kAlias
-            keyPassword kPassword
+            if (ksPath != null && file(ksPath).exists()
+                    && ksPassword != null && !ksPassword.isEmpty()
+                    && kAlias != null && !kAlias.isEmpty()
+                    && kPassword != null && !kPassword.isEmpty()) {
+                storeFile file(ksPath)
+                storePassword ksPassword
+                keyAlias kAlias
+                keyPassword kPassword
+            }
         }
     }
-}
 
-buildTypes {
-    debug {
-        minifyEnabled false
-        // optional: applicationIdSuffix ".debug"  // uncomment if you want side-by-side install
-    }
-    release {
-        minifyEnabled true
-        shrinkResources true
-        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-
-        // Only apply signing config when a real keystore was provided
-        if (System.getenv("KEYSTORE_PATH") && file(System.getenv("KEYSTORE_PATH")).exists()) {
-            signingConfig signingConfigs.release
+    buildTypes {
+        debug {
+            minifyEnabled false
         }
-        // else: unsigned release (or you can force signingConfigs.debug for testing)
+        release {
+            // Keep minify OFF until everything builds cleanly
+            minifyEnabled false
+            shrinkResources false
+
+            def ksPath = System.getenv("KEYSTORE_PATH")
+            if (ksPath != null && file(ksPath).exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
     }
-}
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
