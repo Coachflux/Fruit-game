@@ -32,7 +32,8 @@ android {
             def kAlias = System.getenv("KEY_ALIAS")
             def kPassword = System.getenv("KEY_PASSWORD")
 
-            if (ksPath != null && file(ksPath).exists()
+            if (ksPath != null && !ksPath.isEmpty()
+                    && file(ksPath).exists()
                     && ksPassword != null && !ksPassword.isEmpty()
                     && kAlias != null && !kAlias.isEmpty()
                     && kPassword != null && !kPassword.isEmpty()) {
@@ -49,12 +50,11 @@ android {
             minifyEnabled false
         }
         release {
-            // Keep minify OFF until everything builds cleanly
             minifyEnabled false
             shrinkResources false
 
             def ksPath = System.getenv("KEYSTORE_PATH")
-            if (ksPath != null && file(ksPath).exists()) {
+            if (ksPath != null && !ksPath.isEmpty() && file(ksPath).exists()) {
                 signingConfig signingConfigs.release
             }
         }
