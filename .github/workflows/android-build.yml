@@ -40,9 +40,9 @@ jobs:
             exit 1
           fi
           echo "KEYSTORE_PATH=$(pwd)/keystore.jks" >> $GITHUB_ENV
-          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          echo "KEYSTORE_PASSWORD=$(printf '%s' "${{ secrets.KEYSTORE_PASSWORD }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
+          echo "KEY_ALIAS=$(printf '%s' "${{ secrets.KEY_ALIAS }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=$(printf '%s' "${{ secrets.KEY_PASSWORD }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
