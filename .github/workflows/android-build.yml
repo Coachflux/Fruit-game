@@ -44,6 +44,13 @@ jobs:
           echo "KEY_ALIAS=$(printf '%s' "${{ secrets.KEY_ALIAS }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
           echo "KEY_PASSWORD=$(printf '%s' "${{ secrets.KEY_PASSWORD }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
 
+      - name: Set AdMob IDs
+        run: |
+          echo "ADMOB_APP_ID=$(printf '%s' "${{ secrets.ADMOB_APP_ID }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
+          echo "BANNER_AD_UNIT_ID=$(printf '%s' "${{ secrets.BANNER_AD_UNIT_ID }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
+          echo "INTERSTITIAL_AD_UNIT_ID=$(printf '%s' "${{ secrets.INTERSTITIAL_AD_UNIT_ID }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
+          echo "REWARDED_AD_UNIT_ID=$(printf '%s' "${{ secrets.REWARDED_AD_UNIT_ID }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')" >> $GITHUB_ENV
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
 
