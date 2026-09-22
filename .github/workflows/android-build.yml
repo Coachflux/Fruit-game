@@ -31,7 +31,11 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > keystore.jks || true
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+          if [ ! -s keystore.jks ]; then
+            echo "ERROR: keystore.jks is empty. Check that the ANDROID_KEYSTORE_BASE64 secret is set correctly."
+            exit 1
+          fi
           echo "KEYSTORE_PATH=$(pwd)/keystore.jks" >> $GITHUB_ENV
           echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
           echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
@@ -42,11 +46,9 @@ jobs:
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
-        continue-on-error: true
 
       - name: Build Release AAB
         run: ./gradlew bundleRelease --stacktrace
-        continue-on-error: true
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
