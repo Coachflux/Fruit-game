@@ -8,6 +8,12 @@ def getEnvOrDefault = { String name, String fallback ->
     return value != null && !value.trim().isEmpty() ? value.trim() : fallback
 }
 
+/*
+ * AdMob configuration.
+ *
+ * GitHub Actions can provide real production IDs through environment
+ * variables. The Google test IDs below are used as safe fallbacks.
+ */
 def admobAppId = getEnvOrDefault(
         "ADMOB_APP_ID",
         "ca-app-pub-3940256099942544~3347511713"
@@ -30,31 +36,35 @@ def rewardedAdUnitId = getEnvOrDefault(
 
 android {
     /*
-     * Keep the namespace for the Android source code.
+     * Namespace used by the Android source code.
      *
-     * IMPORTANT:
-     * Google Play identifies this app using applicationId below.
+     * This does NOT need to be the same as applicationId.
      */
     namespace 'io.github.coachflux.fruitfusion'
 
-    compileSdk 35
+    /*
+     * Google Play currently requires the app to target API 36.
+     */
+    compileSdk 36
 
     defaultConfig {
         /*
          * IMPORTANT:
-         * This MUST match the package already registered
-         * in your Google Play Console.
+         * This MUST match the existing Google Play Console app.
          */
         applicationId 'io.github.coachflux.twa'
 
         minSdk 24
-        targetSdk 35
+        targetSdk 36
 
         versionCode 1
         versionName '1.0.0'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
 
+        /*
+         * AdMob IDs
+         */
         buildConfigField 'String', 'ADMOB_APP_ID', "\"${admobAppId}\""
         buildConfigField 'String', 'BANNER_AD_UNIT_ID', "\"${bannerAdUnitId}\""
         buildConfigField 'String', 'INTERSTITIAL_AD_UNIT_ID', "\"${interstitialAdUnitId}\""
@@ -66,9 +76,10 @@ android {
     }
 
     /*
-     * Release signing
+     * Release signing configuration.
      *
-     * These values are supplied by GitHub Actions from GitHub Secrets.
+     * GitHub Actions creates the keystore file from the Base64
+     * GitHub Secret before Gradle runs.
      */
     signingConfigs {
         release {
@@ -106,8 +117,7 @@ android {
             shrinkResources false
 
             /*
-             * Force release builds to use the configured
-             * release signing key.
+             * Force the release APK/AAB to be signed.
              */
             signingConfig signingConfigs.release
 
